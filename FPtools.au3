@@ -116,6 +116,23 @@ Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
 _GUIprepair()
 _StartMainLoop()
 _GUIdel()
+
+Func _AllCtrlDisable()
+	_FlagOn($FLAG_ALLCTRL_DISABLE, 1)
+	_FlagOff($FLAG_ALLCTRL, 1)
+	For $i = 1 To $CLmax
+		GUICtrlSetState($CtrlList[$i - 1], $GUI_DISABLE)
+	Next
+	_FlagOff($FLAG_ALLCTRL_DISABLE, 1)
+EndFunc   ;==>_AllCtrlDisable
+Func _AllCtrlEnable()
+	_FlagOn($FLAG_ALLCTRL_ENABLE, 1)
+	_FlagOn($FLAG_ALLCTRL, 1)
+	For $i = 1 To $CLmax
+		GUICtrlSetState($CtrlList[$i - 1], $GUI_ENABLE)
+	Next
+	_FlagOff($FLAG_ALLCTRL_ENABLE, 1)
+EndFunc   ;==>_AllCtrlEnable
 Func _checkGUImsg()
 	$msg = GUIGetMsg(1)
 	$m = $msg[0]
@@ -333,438 +350,6 @@ Func _CheckRange()
 		GUICtrlSetData($periodfI, $PRnumF)
 	EndIf
 EndFunc   ;==>_CheckRange
-Func _CtrlListAdd($h)
-	If $CLmax < $MAX_CL Then
-		$CtrlList[$CLmax] = $h
-		$CLmax += 1
-	EndIf
-EndFunc   ;==>_CtrlListAdd
-Func _GetFiscInfo()
-	If _TestConnect() = "" Then
-		_DLog("_GetFiscInfo(): No response from printer" & @CRLF)
-		Return 1
-	EndIf
-	Local $beg = TimerInit()
-	$retVal = 0
-	_FlagOn($FLAG_GET_FISC_INFO)
-	$dd = "1"
-	$failTry = 0
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(90, $dd, $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = "" Then $failTry += 1
-	Until $rr <> "" Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
-		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
-	EndIf
-	$FactN = StringLeft(StringTrimLeft($data, 36), 10)
-	$FiscN = StringRight($data, 10)
-	$dd = ""
-	$failTry = 0
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(99, $dd, $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = "" Then $failTry += 1
-	Until $rr <> "" Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
-		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
-	EndIf
-	$VatN = StringTrimRight($data, 2)
-	$dd = ""
-	$failTry = 0
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(97, $dd, $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = "" Then $failTry += 1
-	Until $rr <> "" Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
-		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
-	EndIf
-	$i = StringSplit($data, ",")
-	If $i[0] Then
-		$TaxRateA = $i[1]
-		$TaxRateB = $i[2]
-		$TaxRateV = $i[3]
-		$TaxRateG = $i[4]
-		$j = GUICtrlRead($TaxRateAI)
-		If $j <> $TaxRateA Then
-			GUICtrlSetData($TaxRateAI, $TaxRateA)
-			_DLog("$TaxRateAI corrected." & @CRLF)
-		EndIf
-		If $j <> $TaxRateB Then
-			GUICtrlSetData($TaxRateBI, $TaxRateB)
-			_DLog("$TaxRateBI corrected." & @CRLF)
-		EndIf
-		If $j <> $TaxRateV Then
-			GUICtrlSetData($TaxRateVI, $TaxRateV)
-			_DLog("$TaxRateVI corrected." & @CRLF)
-		EndIf
-		If $j <> $TaxRateG Then
-			GUICtrlSetData($TaxRateGI, $TaxRateG)
-			_DLog("$TaxRateGI corrected." & @CRLF)
-		EndIf
-	Else
-		_DLog("Tax rates read error" & @CRLF)
-		$retVal = 1
-	EndIf
-	GUICtrlSetState($TaxRateAChB, $GUI_CHECKED)
-	GUICtrlSetState($TaxRateBChB, $GUI_CHECKED)
-	GUICtrlSetState($TaxRateVChB, $GUI_CHECKED)
-	GUICtrlSetState($TaxRateGChB, $GUI_CHECKED)
-	_DLog("$FactN=" & $FactN & " $VatN=" & $VatN & " $FiscN=" & $FiscN & " $TaxRateA=" & $TaxRateA & " $TaxRateB=" & $TaxRateB & " $TaxRateV=" & $TaxRateV & " $TaxRateG=" & $TaxRateG & @CRLF)
-	$i = GUICtrlRead($FactNI)
-	If $i <> $FactN Then
-		GUICtrlSetData($FactNI, $FactN)
-		_DLog("$FactNI corrected." & @CRLF)
-	EndIf
-	$i = GUICtrlRead($FiscNI)
-	If $i <> $FiscN Then
-		GUICtrlSetData($FiscNI, $FiscN)
-		_DLog("$FiscNI corrected." & @CRLF)
-	EndIf
-	$i = GUICtrlRead($VatNI)
-	If $i <> $VatN Then
-		GUICtrlSetData($VatNI, $VatN)
-		_DLog("$VatNI corrected." & @CRLF)
-	EndIf
-	_FlagOff($FLAG_GET_FISC_INFO)
-	Return $retVal
-EndFunc   ;==>_GetFiscInfo
-Func _GetStatistics($bd, $t)
-	$secEld = $t / 1000
-	$curBPS = $bd / $secEld
-	$minEld = Int($secEld / 60)
-	$secEld = $secEld - 60 * $minEld
-	$secLeft = ($allBytes - $bd) / $curBPS
-	$minLeft = Int($secLeft / 60)
-	$secLeft = $secLeft - 60 * $minLeft
-	$perc = 100 * $bd / $allBytes
-	$s = $bd & " of " & $allBytes & " bytes done (" & Int($perc) & "%), time elipsed: " & $minEld & " min " & _
-			Int($secEld) & " sec, left: " & $minLeft & " min " & Int($secLeft) & " sec (" & Int(8 * $curBPS) & " bps)"
-	GUICtrlSetData($bdI, $bd)
-	GUICtrlSetData($allBytesI, $allBytes)
-	GUICtrlSetData($percI, Int($perc))
-	$minstr = ""
-	If $minEld Then $minstr = $minEld & "m "
-	GUICtrlSetData($EldI, $minstr & Int($secEld) & "s")
-	$minstr = ""
-	If $minLeft Then $minstr = $minLeft & "m "
-	GUICtrlSetData($LeftI, $minstr & Int($secLeft) & "s")
-	GUICtrlSetData($curBPSI, Int(8 * $curBPS))
-	Return $s
-EndFunc   ;==>_GetStatistics
-Func _GUIdel()
-	_FlagOff($FLAG_EXIT_GUI)
-	GUIDelete()
-	Return 0
-EndFunc   ;==>_GUIdel
-Func _GUIprepair()
-	#region $_stat
-	$_stat = GUICreate("Status", 400, 300)
-	$textE = GUICtrlCreateEdit("", 0, 0, 400, 300)
-	#endregion
-	#region $_hf
-	$_hf = GUICreate("Edit HF", 300 - 20, 230 - 30)
-	GUISwitch($_hf)
-	$HFeditE = GUICtrlCreateEdit("", 5, 5, 290 - 20, 160 - 30, $ES_WANTRETURN)
-	GUICtrlSetFont(-1, 9, Default, Default, "Courier New")
-	$HFreadB = GUICtrlCreateButton("Read", 10, 175 - 30, 50, 20, 0)
-	$HFwriteB = GUICtrlCreateButton("Write", 10, 205 - 30, 50, 20, 0)
-	$HFopenB = GUICtrlCreateButton("Open", 70, 175 - 30, 50, 20, 0)
-	$HFsaveB = GUICtrlCreateButton("Save", 70, 205 - 30, 50, 20, 0)
-	#endregion
-	#region $_main
-	$_main = GUICreate("FPtools", 367, 361)
-	GUISwitch($_main)
-	#region GUICtrlCreate
-	$FactNL = GUICtrlCreateLabel("Factory number:", 10, 5, 80, 20)
-	$FactNI = GUICtrlCreateInput("", 10, 20, 80, 20)
-	$SetFactNB = GUICtrlCreateButton("Set", 55, 45, 35, 20, 0)
-	$VatNL = GUICtrlCreateLabel("VAT number:", 100, 5, 80, 20)
-	$VatNI = GUICtrlCreateInput("", 100, 20, 80, 20)
-	$SetVatNB = GUICtrlCreateButton("Set", 145, 45, 35, 20, 0)
-	$FiscNL = GUICtrlCreateLabel("Fiscal number:", 190, 5, 80, 20)
-	$FiscNI = GUICtrlCreateInput("", 190, 20, 80, 20)
-	$SetFiscNB = GUICtrlCreateButton("Set", 235, 45, 35, 20, 0)
-	$FiscRefreshB = GUICtrlCreateButton("Refresh", 310, 20, 50, 20)
-	$RefiscChB = GUICtrlCreateCheckbox("RE", 275, 45, 36, 20)
-	$FiscalizeB = GUICtrlCreateButton("Fiscalize", 310, 45, 50, 20)
-	$startAdrL = GUICtrlCreateLabel("start adr:", 10, 65, 50, 20)
-	$endAdrL = GUICtrlCreateLabel("end adr:", 70, 65, 50, 20)
-	$startAdrI = GUICtrlCreateInput("", 10, 80, 50, 20)
-	$endAdrI = GUICtrlCreateInput("", 70, 80, 50, 20)
-	$TaxRateAChB = GUICtrlCreateCheckbox("A ", 130, 65, 35, 15)
-	$TaxRateAI = GUICtrlCreateInput("", 130, 80, 35, 20)
-	$TaxRateBChB = GUICtrlCreateCheckbox("Á ", 175, 65, 35, 15)
-	$TaxRateBI = GUICtrlCreateInput("", 175, 80, 35, 20)
-	$TaxRateVChB = GUICtrlCreateCheckbox("Â ", 220, 65, 35, 15)
-	$TaxRateVI = GUICtrlCreateInput("", 220, 80, 35, 20)
-	$TaxRateGChB = GUICtrlCreateCheckbox("Ã ", 265, 65, 35, 15)
-	$TaxRateGI = GUICtrlCreateInput("", 265, 80, 35, 20)
-	$SetTaxRatesB = GUICtrlCreateButton("Set taxes", 310, 80, 50, 20)
-	$bdL = GUICtrlCreateLabel("byte done:", 10, 105, 50, 20)
-	$allBytesL = GUICtrlCreateLabel("byte total:", 70, 105, 50, 20)
-	$percL = GUICtrlCreateLabel("% done:", 130, 105, 50, 20)
-	$EldL = GUICtrlCreateLabel("elpsd time:", 190, 105, 50, 20)
-	$LeftL = GUICtrlCreateLabel("time left:", 250, 105, 50, 20)
-	$curBPSL = GUICtrlCreateLabel("avrg bps:", 310, 105, 50, 20)
-	$bdI = GUICtrlCreateInput("", 10, 120, 50, 20)
-	$allBytesI = GUICtrlCreateInput("", 70, 120, 50, 20)
-	$percI = GUICtrlCreateInput("", 130, 120, 50, 20)
-	$EldI = GUICtrlCreateInput("", 190, 120, 50, 20)
-	$LeftI = GUICtrlCreateInput("", 250, 120, 50, 20)
-	$curBPSI = GUICtrlCreateInput("", 310, 120, 50, 20)
-	$readFlashB = GUICtrlCreateButton("Read", 10, 150, 50, 20)
-	$stopReadFlashB = GUICtrlCreateButton("Stop", 10, 180, 50, 20)
-	$writeFlashB = GUICtrlCreateButton("Write", 70, 150, 50, 20)
-	$eraseFlashB = GUICtrlCreateButton("Erase", 70, 180, 50, 20)
-	$getStatusB = GUICtrlCreateButton("Status", 10, 210, 50, 20)
-	$setVerB = GUICtrlCreateButton("Set ver", 70, 210, 50, 20)
-	$cleanNsetB = GUICtrlCreateButton("Clean+Set", 70, 240, 50, 20)
-	GUICtrlSetFont(-1, 7)
-	$HFreadNsaveB = GUICtrlCreateButton("ReadSave", 130, 150, 50, 20)
-	GUICtrlSetFont(-1, 7)
-	$HFopenNwriteB = GUICtrlCreateButton("OpenWrite", 130, 180, 50, 20)
-	GUICtrlSetFont(-1, 7)
-	$HFeditB = GUICtrlCreateButton("Edit HF", 130, 210, 50, 20)
-	$timeDT = GUICtrlCreateDate("", 190, 150, 110, 20, $DTS_UPDOWN)
-	$timeSetB = GUICtrlCreateButton("Set", 190, 180, 50, 20)
-	$timeGetB = GUICtrlCreateButton("Get", 250, 180, 50, 20)
-	$timePCgetB = GUICtrlCreateButton("<<", 310, 150, 20, 20)
-	$periodsDT = GUICtrlCreateDate("", 190, 210, 110, 20, $DTS_UPDOWN)
-	$periodfDT = GUICtrlCreateDate("", 190, 240, 110, 20, $DTS_UPDOWN)
-	$periodsI = GUICtrlCreateInput("", 190, 210, 110, 20)
-	$periodfI = GUICtrlCreateInput("", 190, 240, 110, 20)
-	$periodFormDateCB = GUICtrlCreateRadio("date", 190, 260, 50, 20)
-	$periodFormNumCB = GUICtrlCreateRadio("num", 250, 260, 50, 20)
-	$PRmakeB = GUICtrlCreateButton("PR", 310, 210, 50, 20)
-	$PRsingleChB = GUICtrlCreateCheckbox("Single", 310, 240, 50, 20)
-	$PortN = GUICtrlCreateCombo("", 10, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	$PortSpeed = GUICtrlCreateCombo("", 90, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	$PortConB = GUICtrlCreateButton("Connect", 170, 330, 60, 20)
-	$serviceChB = GUICtrlCreateCheckbox("Service", 240, 330, 60, 20)
-	#endregion
-	#region _CtrlListAdd
-	_CtrlListAdd($SetFactNB)
-	_CtrlListAdd($SetVatNB)
-	_CtrlListAdd($SetFiscNB)
-	_CtrlListAdd($FiscRefreshB)
-	_CtrlListAdd($FiscalizeB)
-	_CtrlListAdd($RefiscChB)
-	_CtrlListAdd($readFlashB)
-	_CtrlListAdd($stopReadFlashB)
-	_CtrlListAdd($writeFlashB)
-	_CtrlListAdd($eraseFlashB)
-	_CtrlListAdd($setVerB)
-	_CtrlListAdd($cleanNsetB)
-	_CtrlListAdd($HFreadNsaveB)
-	_CtrlListAdd($HFopenNwriteB)
-	_CtrlListAdd($HFeditB)
-	_CtrlListAdd($startAdrI)
-	_CtrlListAdd($endAdrI)
-	_CtrlListAdd($TaxRateAChB)
-	_CtrlListAdd($TaxRateAI)
-	_CtrlListAdd($TaxRateBChB)
-	_CtrlListAdd($TaxRateBI)
-	_CtrlListAdd($TaxRateVChB)
-	_CtrlListAdd($TaxRateVI)
-	_CtrlListAdd($TaxRateGChB)
-	_CtrlListAdd($TaxRateGI)
-	_CtrlListAdd($SetTaxRatesB)
-	_CtrlListAdd($allBytesI)
-	_CtrlListAdd($timeDT)
-	_CtrlListAdd($timeSetB)
-	_CtrlListAdd($timeGetB)
-	_CtrlListAdd($timePCgetB)
-	_CtrlListAdd($periodFormDateCB)
-	_CtrlListAdd($periodFormNumCB)
-	_CtrlListAdd($periodsDT)
-	_CtrlListAdd($periodfDT)
-	_CtrlListAdd($periodsI)
-	_CtrlListAdd($periodfI)
-	_CtrlListAdd($PRsingleChB)
-	_CtrlListAdd($PRmakeB)
-	_CtrlListAdd($PortConB)
-	#endregion
-	#region GUICtrlSetData
-	$s = _CommListPorts(1)
-	$s1 = _StringExplode($s, "|")
-	GUICtrlSetData($PortN, $s, $s1[0])
-	GUICtrlSetData($PortSpeed, "9600|19200|57600|115200", "19200")
-	GUICtrlSetData($startAdrI, $startAdr)
-	GUICtrlSetData($endAdrI, $endAdr)
-	GUICtrlSetData($allBytesI, $allBytes)
-	GUICtrlSetData($periodsI, $PRnumS)
-	GUICtrlSetData($periodfI, $PRnumF)
-	#endregion
-	#region GUICtrlSetStyle
-	GUICtrlSetStyle($VatNI, $ES_NUMBER)
-	GUICtrlSetStyle($FiscNI, $ES_NUMBER)
-	GUICtrlSetStyle($startAdrI, $ES_NUMBER)
-	GUICtrlSetStyle($endAdrI, $ES_NUMBER)
-	GUICtrlSetStyle($bdI, $ES_NUMBER)
-	GUICtrlSetStyle($allBytesI, $ES_NUMBER)
-	GUICtrlSetStyle($percI, $ES_NUMBER)
-	GUICtrlSetStyle($curBPSI, $ES_NUMBER)
-	#endregion
-	#region GUICtrlSendMsg
-	$DTM_SETFORMAT_ = 0x1032
-	GUICtrlSendMsg($timeDT, $DTM_SETFORMAT_, 0, $DTstyle)
-	GUICtrlSendMsg($periodsDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
-	GUICtrlSendMsg($periodfDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
-	#endregion
-	_AllCtrlDisable()
-	#region GUICtrlSetState
-	GUICtrlSetState($PortConB, $GUI_ENABLE)
-	GUICtrlSetState($bdI, $GUI_DISABLE)
-	GUICtrlSetState($percI, $GUI_DISABLE)
-	GUICtrlSetState($EldI, $GUI_DISABLE)
-	GUICtrlSetState($LeftI, $GUI_DISABLE)
-	GUICtrlSetState($curBPSI, $GUI_DISABLE)
-	GUICtrlSetState($periodFormDateCB, $GUI_CHECKED)
-	#endregion
-	#region _ServiceListAdd
-	_ServiceListAdd($writeFlashB)
-	_ServiceListAdd($eraseFlashB)
-	_ServiceListAdd($cleanNsetB)
-	_ServiceListAdd($setVerB)
-	_ServiceListAdd($SetFactNB)
-	#endregion
-	_ServiceDisable()
-	_PRmodeSet(0)
-	GUISetState()
-	GUICtrlSetState($PortConB, $GUI_FOCUS)
-	#endregion
-	Return 0
-EndFunc   ;==>_GUIprepair
-Func _incSeq($i)
-	$i += 1
-	If $i > 95 Then $i = 0
-	Return $i
-EndFunc   ;==>_incSeq
-Func _Info($s, $mainHndl)
-	GUISetState(@SW_DISABLE, $mainHndl)
-	$r = MsgBox(4096 + 48, "Info", $s)
-	_DLog("_Info(): $r=" & $r & @CRLF)
-	$res = 0
-	If $r = 6 Then $res = 1
-	GUISetState(@SW_ENABLE, $mainHndl)
-	GUISetState(@SW_HIDE, $mainHndl)
-	GUISetState(@SW_SHOW, $mainHndl)
-	Return $res
-EndFunc   ;==>_Info
-Func _Port()
-	If $portState Then
-		_ClosePort()
-		_AllCtrlDisable()
-		GUICtrlSetData($PortConB, $CONNECT_B_T)
-		GUICtrlSetState($PortConB, $GUI_ENABLE)
-		GUICtrlSetState($PortSpeed, $GUI_ENABLE)
-		GUICtrlSetState($PortN, $GUI_ENABLE)
-		$portState = 0
-	Else
-		$p = StringTrimLeft(GUICtrlRead($PortN), 3)
-		$sp = GUICtrlRead($PortSpeed)
-		$err = _OpenPort($p, $sp)
-		If $err Then
-			_DLog("_Port(): OpenPort() " & $err & @CRLF)
-			Return 1
-		EndIf
-		$i = _GetFiscInfo()
-		If $i Then
-			_DLog("_Port(): _GetFiscInfo() = " & $i & @CRLF)
-			Return 1
-		EndIf
-		_AllCtrlEnable()
-		GUICtrlSetData($PortConB, $CONNECT_B_T2)
-		GUICtrlSetState($PortSpeed, $GUI_DISABLE)
-		GUICtrlSetState($PortN, $GUI_DISABLE)
-		$portState = 1
-	EndIf
-	Return 0
-EndFunc   ;==>_Port
-Func _ServiceInput($mainHndl)
-	_FlagOn($FLAG_SERVICE_INPUT, 1)
-	GUISetState(@SW_DISABLE, $mainHndl)
-	$pas = InputBox("Service mode", "Enter service password", "", "#", 160, 110)
-	$res = 0
-	If $pas <> "75296" Then $res = 1
-	GUISetState(@SW_ENABLE, $mainHndl)
-	GUISetState(@SW_HIDE, $mainHndl)
-	GUISetState(@SW_SHOW, $mainHndl)
-	Return $res
-	_FlagOff($FLAG_SERVICE_INPUT, 1)
-EndFunc   ;==>_ServiceInput
-Func _ServiceListAdd($h)
-	If $SLmax < $MAX_SL Then
-		$serviceList[$SLmax] = $h
-		$SLmax += 1
-	EndIf
-EndFunc   ;==>_ServiceListAdd
-Func _StartMainLoop()
-	$loopTimer = TimerInit()
-	$oldTime = 0
-	While Not _Flag($FLAG_EXIT_GUI)
-		$Time = TimerDiff($loopTimer)
-		If Int($Time / 500) <> $oldTime Then
-			$oldTime = Int($Time / 500)
-			_CheckRange()
-			If Not $portState Then _PCtimeGet()
-		EndIf
-	WEnd
-	Return 0
-EndFunc   ;==>_StartMainLoop
-Func _TestConnect()
-	$res = _SendCMD(74, "W", $seq)
-	$rrRaw = _ReceiveAll()
-	$rr = _Validate($rrRaw)
-	$data = _GetData(_GetBody($rr))
-	If StringLen($data) = 6 Then $statusBytes = $data
-	Return $data
-EndFunc   ;==>_TestConnect
-Func _Warn($s, $mainHndl)
-	GUISetState(@SW_DISABLE, $mainHndl)
-	$r = MsgBox(4096 + 256 + 16 + 4, "Warning!", $s)
-	_DLog("_Warn(): $r=" & $r & @CRLF)
-	$res = 0
-	If $r = 6 Then $res = 1
-	GUISetState(@SW_ENABLE, $mainHndl)
-	GUISetState(@SW_HIDE, $mainHndl)
-	GUISetState(@SW_SHOW, $mainHndl)
-	Return $res
-EndFunc   ;==>_Warn
-#region Processing functions
-Func _AllCtrlDisable()
-	_FlagOn($FLAG_ALLCTRL_DISABLE, 1)
-	_FlagOff($FLAG_ALLCTRL, 1)
-	For $i = 1 To $CLmax
-		GUICtrlSetState($CtrlList[$i - 1], $GUI_DISABLE)
-	Next
-	_FlagOff($FLAG_ALLCTRL_DISABLE, 1)
-EndFunc   ;==>_AllCtrlDisable
-Func _AllCtrlEnable()
-	_FlagOn($FLAG_ALLCTRL_ENABLE, 1)
-	_FlagOn($FLAG_ALLCTRL, 1)
-	For $i = 1 To $CLmax
-		GUICtrlSetState($CtrlList[$i - 1], $GUI_ENABLE)
-	Next
-	_FlagOff($FLAG_ALLCTRL_ENABLE, 1)
-EndFunc   ;==>_AllCtrlEnable
 Func _CleanNSet($mainHndl)
 	_FlagOn($FLAG_FISC_CLEAN_N_SET)
 	_DLog("_CleanNSet(): Starting _FlashErase()... " & @CRLF)
@@ -803,6 +388,12 @@ Func _CleanNSet($mainHndl)
 	_FlagOff($FLAG_FISC_CLEAN_N_SET)
 	Return 0
 EndFunc   ;==>_CleanNSet
+Func _CtrlListAdd($h)
+	If $CLmax < $MAX_CL Then
+		$CtrlList[$CLmax] = $h
+		$CLmax += 1
+	EndIf
+EndFunc   ;==>_CtrlListAdd
 Func _Fiscalize($mainHndl)
 	If _TestConnect() = "" Then
 		_DLog("_Fiscalize(): No response from printer" & @CRLF)
@@ -1098,60 +689,135 @@ Func _FPtimeSet()
 	_FlagOff($FLAG_TIME_SET)
 	Return $retVal
 EndFunc   ;==>_FPtimeSet
-Func _PRmakeDate()
+Func _GetFiscInfo()
 	If _TestConnect() = "" Then
-		_DLog("_PRmakeDate(): No response from printer" & @CRLF)
+		_DLog("_GetFiscInfo(): No response from printer" & @CRLF)
 		Return 1
 	EndIf
-	_FlagOn($FLAG_PR_MAKE_DATE, 1)
+	Local $beg = TimerInit()
 	$retVal = 0
-	$ds = GUICtrlRead($periodsDT)
-	$df = GUICtrlRead($periodfDT)
-	$dd = "0000," & StringReplace(StringLeft($ds, 8), "-", "") & "," & StringReplace(StringLeft($df, 8), "-", "")
-	_DLog("_PRmakeDate(): $dd = " & $dd & @CRLF)
+	_FlagOn($FLAG_GET_FISC_INFO)
+	$dd = "1"
 	$failTry = 0
 	Do
 		$seq = _incSeq($seq)
-		$res = _SendCMD(79, $dd, $seq)
+		$res = _SendCMD(90, $dd, $seq)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
 		If $rr = "" Then $failTry += 1
 	Until $rr <> "" Or $failTry > $maxFailTry
 	If $failTry > $maxFailTry Then
-		_DLog("_PRmakeDate(): No response while reading data" & @CRLF)
-		$retVal = 1
-	EndIf
-	_FlagOff($FLAG_PR_MAKE_DATE, 1)
-	Return $retVal
-EndFunc
-Func _PRmakeNum()
-	If _TestConnect() = "" Then
-		_DLog("_PRmakeNum(): No response from printer" & @CRLF)
+		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
+		_FlagOff($FLAG_GET_FISC_INFO)
 		Return 1
 	EndIf
-	_FlagOn($FLAG_PR_MAKE_NUM, 1)
-	$retVal = 0
-	$ds = GUICtrlRead($periodsI)
-	$df = GUICtrlRead($periodfI)
-	$dd = "0000," & $ds & "," & $df
-	_DLog("_PRmakeNum(): $dd = " & $dd & @CRLF)
+	$FactN = StringLeft(StringTrimLeft($data, 36), 10)
+	$FiscN = StringRight($data, 10)
+	$dd = ""
 	$failTry = 0
 	Do
 		$seq = _incSeq($seq)
-		$res = _SendCMD(95, $dd, $seq)
+		$res = _SendCMD(99, $dd, $seq)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
 		If $rr = "" Then $failTry += 1
 	Until $rr <> "" Or $failTry > $maxFailTry
 	If $failTry > $maxFailTry Then
-		_DLog("_PRmakeNum(): No response while reading data" & @CRLF)
+		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
+		_FlagOff($FLAG_GET_FISC_INFO)
+		Return 1
+	EndIf
+	$VatN = StringTrimRight($data, 2)
+	$dd = ""
+	$failTry = 0
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(97, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = "" Then $failTry += 1
+	Until $rr <> "" Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog("_GetFiscInfo(): No response while reading data" & @CRLF)
+		_FlagOff($FLAG_GET_FISC_INFO)
+		Return 1
+	EndIf
+	$i = StringSplit($data, ",")
+	If $i[0] Then
+		$TaxRateA = $i[1]
+		$TaxRateB = $i[2]
+		$TaxRateV = $i[3]
+		$TaxRateG = $i[4]
+		$j = GUICtrlRead($TaxRateAI)
+		If $j <> $TaxRateA Then
+			GUICtrlSetData($TaxRateAI, $TaxRateA)
+			_DLog("$TaxRateAI corrected." & @CRLF)
+		EndIf
+		If $j <> $TaxRateB Then
+			GUICtrlSetData($TaxRateBI, $TaxRateB)
+			_DLog("$TaxRateBI corrected." & @CRLF)
+		EndIf
+		If $j <> $TaxRateV Then
+			GUICtrlSetData($TaxRateVI, $TaxRateV)
+			_DLog("$TaxRateVI corrected." & @CRLF)
+		EndIf
+		If $j <> $TaxRateG Then
+			GUICtrlSetData($TaxRateGI, $TaxRateG)
+			_DLog("$TaxRateGI corrected." & @CRLF)
+		EndIf
+	Else
+		_DLog("Tax rates read error" & @CRLF)
 		$retVal = 1
 	EndIf
-	_FlagOff($FLAG_PR_MAKE_NUM, 1)
+	GUICtrlSetState($TaxRateAChB, $GUI_CHECKED)
+	GUICtrlSetState($TaxRateBChB, $GUI_CHECKED)
+	GUICtrlSetState($TaxRateVChB, $GUI_CHECKED)
+	GUICtrlSetState($TaxRateGChB, $GUI_CHECKED)
+	_DLog("$FactN=" & $FactN & " $VatN=" & $VatN & " $FiscN=" & $FiscN & " $TaxRateA=" & $TaxRateA & " $TaxRateB=" & $TaxRateB & " $TaxRateV=" & $TaxRateV & " $TaxRateG=" & $TaxRateG & @CRLF)
+	$i = GUICtrlRead($FactNI)
+	If $i <> $FactN Then
+		GUICtrlSetData($FactNI, $FactN)
+		_DLog("$FactNI corrected." & @CRLF)
+	EndIf
+	$i = GUICtrlRead($FiscNI)
+	If $i <> $FiscN Then
+		GUICtrlSetData($FiscNI, $FiscN)
+		_DLog("$FiscNI corrected." & @CRLF)
+	EndIf
+	$i = GUICtrlRead($VatNI)
+	If $i <> $VatN Then
+		GUICtrlSetData($VatNI, $VatN)
+		_DLog("$VatNI corrected." & @CRLF)
+	EndIf
+	_FlagOff($FLAG_GET_FISC_INFO)
 	Return $retVal
-EndFunc
+EndFunc   ;==>_GetFiscInfo
+Func _GetStatistics($bd, $t)
+	$secEld = $t / 1000
+	$curBPS = $bd / $secEld
+	$minEld = Int($secEld / 60)
+	$secEld = $secEld - 60 * $minEld
+	$secLeft = ($allBytes - $bd) / $curBPS
+	$minLeft = Int($secLeft / 60)
+	$secLeft = $secLeft - 60 * $minLeft
+	$perc = 100 * $bd / $allBytes
+	$s = $bd & " of " & $allBytes & " bytes done (" & Int($perc) & "%), time elipsed: " & $minEld & " min " & _
+			Int($secEld) & " sec, left: " & $minLeft & " min " & Int($secLeft) & " sec (" & Int(8 * $curBPS) & " bps)"
+	GUICtrlSetData($bdI, $bd)
+	GUICtrlSetData($allBytesI, $allBytes)
+	GUICtrlSetData($percI, Int($perc))
+	$minstr = ""
+	If $minEld Then $minstr = $minEld & "m "
+	GUICtrlSetData($EldI, $minstr & Int($secEld) & "s")
+	$minstr = ""
+	If $minLeft Then $minstr = $minLeft & "m "
+	GUICtrlSetData($LeftI, $minstr & Int($secLeft) & "s")
+	GUICtrlSetData($curBPSI, Int(8 * $curBPS))
+	Return $s
+EndFunc   ;==>_GetStatistics
 Func _GetStatusB()
 	Dim $st[6][8]
 	If $statusBytes = "" Or StringLen($statusBytes) <> 6 Then
@@ -1239,6 +905,190 @@ Func _GetStatusB()
 	_FlagOff($FLAG_FISC_GET_STATUS)
 	Return 0
 EndFunc   ;==>_GetStatusB
+Func _GUIdel()
+	_FlagOff($FLAG_EXIT_GUI)
+	GUIDelete()
+	Return 0
+EndFunc   ;==>_GUIdel
+Func _GUIprepair()
+	#region $_stat
+	$_stat = GUICreate("Status", 400, 300)
+	$textE = GUICtrlCreateEdit("", 0, 0, 400, 300)
+	#endregion $_stat
+	#region $_hf
+	$_hf = GUICreate("Edit HF", 300 - 20, 230 - 30)
+	GUISwitch($_hf)
+	$HFeditE = GUICtrlCreateEdit("", 5, 5, 290 - 20, 160 - 30, $ES_WANTRETURN)
+	GUICtrlSetFont(-1, 9, Default, Default, "Courier New")
+	$HFreadB = GUICtrlCreateButton("Read", 10, 175 - 30, 50, 20, 0)
+	$HFwriteB = GUICtrlCreateButton("Write", 10, 205 - 30, 50, 20, 0)
+	$HFopenB = GUICtrlCreateButton("Open", 70, 175 - 30, 50, 20, 0)
+	$HFsaveB = GUICtrlCreateButton("Save", 70, 205 - 30, 50, 20, 0)
+	#endregion $_hf
+	#region $_main
+	$_main = GUICreate("FPtools", 367, 361)
+	GUISwitch($_main)
+	#region GUICtrlCreate
+	$FactNL = GUICtrlCreateLabel("Factory number:", 10, 5, 80, 20)
+	$FactNI = GUICtrlCreateInput("", 10, 20, 80, 20)
+	$SetFactNB = GUICtrlCreateButton("Set", 55, 45, 35, 20, 0)
+	$VatNL = GUICtrlCreateLabel("VAT number:", 100, 5, 80, 20)
+	$VatNI = GUICtrlCreateInput("", 100, 20, 80, 20)
+	$SetVatNB = GUICtrlCreateButton("Set", 145, 45, 35, 20, 0)
+	$FiscNL = GUICtrlCreateLabel("Fiscal number:", 190, 5, 80, 20)
+	$FiscNI = GUICtrlCreateInput("", 190, 20, 80, 20)
+	$SetFiscNB = GUICtrlCreateButton("Set", 235, 45, 35, 20, 0)
+	$FiscRefreshB = GUICtrlCreateButton("Refresh", 310, 20, 50, 20)
+	$RefiscChB = GUICtrlCreateCheckbox("RE", 275, 45, 36, 20)
+	$FiscalizeB = GUICtrlCreateButton("Fiscalize", 310, 45, 50, 20)
+	$startAdrL = GUICtrlCreateLabel("start adr:", 10, 65, 50, 20)
+	$endAdrL = GUICtrlCreateLabel("end adr:", 70, 65, 50, 20)
+	$startAdrI = GUICtrlCreateInput("", 10, 80, 50, 20)
+	$endAdrI = GUICtrlCreateInput("", 70, 80, 50, 20)
+	$TaxRateAChB = GUICtrlCreateCheckbox("A ", 130, 65, 35, 15)
+	$TaxRateAI = GUICtrlCreateInput("", 130, 80, 35, 20)
+	$TaxRateBChB = GUICtrlCreateCheckbox("Á ", 175, 65, 35, 15)
+	$TaxRateBI = GUICtrlCreateInput("", 175, 80, 35, 20)
+	$TaxRateVChB = GUICtrlCreateCheckbox("Â ", 220, 65, 35, 15)
+	$TaxRateVI = GUICtrlCreateInput("", 220, 80, 35, 20)
+	$TaxRateGChB = GUICtrlCreateCheckbox("Ã ", 265, 65, 35, 15)
+	$TaxRateGI = GUICtrlCreateInput("", 265, 80, 35, 20)
+	$SetTaxRatesB = GUICtrlCreateButton("Set taxes", 310, 80, 50, 20)
+	$bdL = GUICtrlCreateLabel("byte done:", 10, 105, 50, 20)
+	$allBytesL = GUICtrlCreateLabel("byte total:", 70, 105, 50, 20)
+	$percL = GUICtrlCreateLabel("% done:", 130, 105, 50, 20)
+	$EldL = GUICtrlCreateLabel("elpsd time:", 190, 105, 50, 20)
+	$LeftL = GUICtrlCreateLabel("time left:", 250, 105, 50, 20)
+	$curBPSL = GUICtrlCreateLabel("avrg bps:", 310, 105, 50, 20)
+	$bdI = GUICtrlCreateInput("", 10, 120, 50, 20)
+	$allBytesI = GUICtrlCreateInput("", 70, 120, 50, 20)
+	$percI = GUICtrlCreateInput("", 130, 120, 50, 20)
+	$EldI = GUICtrlCreateInput("", 190, 120, 50, 20)
+	$LeftI = GUICtrlCreateInput("", 250, 120, 50, 20)
+	$curBPSI = GUICtrlCreateInput("", 310, 120, 50, 20)
+	$readFlashB = GUICtrlCreateButton("Read", 10, 150, 50, 20)
+	$stopReadFlashB = GUICtrlCreateButton("Stop", 10, 180, 50, 20)
+	$writeFlashB = GUICtrlCreateButton("Write", 70, 150, 50, 20)
+	$eraseFlashB = GUICtrlCreateButton("Erase", 70, 180, 50, 20)
+	$getStatusB = GUICtrlCreateButton("Status", 10, 210, 50, 20)
+	$setVerB = GUICtrlCreateButton("Set ver", 70, 210, 50, 20)
+	$cleanNsetB = GUICtrlCreateButton("Clean+Set", 70, 240, 50, 20)
+	GUICtrlSetFont(-1, 7)
+	$HFreadNsaveB = GUICtrlCreateButton("ReadSave", 130, 150, 50, 20)
+	GUICtrlSetFont(-1, 7)
+	$HFopenNwriteB = GUICtrlCreateButton("OpenWrite", 130, 180, 50, 20)
+	GUICtrlSetFont(-1, 7)
+	$HFeditB = GUICtrlCreateButton("Edit HF", 130, 210, 50, 20)
+	$timeDT = GUICtrlCreateDate("", 190, 150, 110, 20, $DTS_UPDOWN)
+	$timeSetB = GUICtrlCreateButton("Set", 190, 180, 50, 20)
+	$timeGetB = GUICtrlCreateButton("Get", 250, 180, 50, 20)
+	$timePCgetB = GUICtrlCreateButton("<<", 310, 150, 20, 20)
+	$periodsDT = GUICtrlCreateDate("", 190, 210, 110, 20, $DTS_UPDOWN)
+	$periodfDT = GUICtrlCreateDate("", 190, 240, 110, 20, $DTS_UPDOWN)
+	$periodsI = GUICtrlCreateInput("", 190, 210, 110, 20)
+	$periodfI = GUICtrlCreateInput("", 190, 240, 110, 20)
+	$periodFormDateCB = GUICtrlCreateRadio("date", 190, 260, 50, 20)
+	$periodFormNumCB = GUICtrlCreateRadio("num", 250, 260, 50, 20)
+	$PRmakeB = GUICtrlCreateButton("PR", 310, 210, 50, 20)
+	$PRsingleChB = GUICtrlCreateCheckbox("Single", 310, 240, 50, 20)
+	$PortN = GUICtrlCreateCombo("", 10, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$PortSpeed = GUICtrlCreateCombo("", 90, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$PortConB = GUICtrlCreateButton("Connect", 170, 330, 60, 20)
+	$serviceChB = GUICtrlCreateCheckbox("Service", 240, 330, 60, 20)
+	#endregion GUICtrlCreate
+	#region _CtrlListAdd
+	_CtrlListAdd($SetFactNB)
+	_CtrlListAdd($SetVatNB)
+	_CtrlListAdd($SetFiscNB)
+	_CtrlListAdd($FiscRefreshB)
+	_CtrlListAdd($FiscalizeB)
+	_CtrlListAdd($RefiscChB)
+	_CtrlListAdd($readFlashB)
+	_CtrlListAdd($stopReadFlashB)
+	_CtrlListAdd($writeFlashB)
+	_CtrlListAdd($eraseFlashB)
+	_CtrlListAdd($setVerB)
+	_CtrlListAdd($cleanNsetB)
+	_CtrlListAdd($HFreadNsaveB)
+	_CtrlListAdd($HFopenNwriteB)
+	_CtrlListAdd($HFeditB)
+	_CtrlListAdd($startAdrI)
+	_CtrlListAdd($endAdrI)
+	_CtrlListAdd($TaxRateAChB)
+	_CtrlListAdd($TaxRateAI)
+	_CtrlListAdd($TaxRateBChB)
+	_CtrlListAdd($TaxRateBI)
+	_CtrlListAdd($TaxRateVChB)
+	_CtrlListAdd($TaxRateVI)
+	_CtrlListAdd($TaxRateGChB)
+	_CtrlListAdd($TaxRateGI)
+	_CtrlListAdd($SetTaxRatesB)
+	_CtrlListAdd($allBytesI)
+	_CtrlListAdd($timeDT)
+	_CtrlListAdd($timeSetB)
+	_CtrlListAdd($timeGetB)
+	_CtrlListAdd($timePCgetB)
+	_CtrlListAdd($periodFormDateCB)
+	_CtrlListAdd($periodFormNumCB)
+	_CtrlListAdd($periodsDT)
+	_CtrlListAdd($periodfDT)
+	_CtrlListAdd($periodsI)
+	_CtrlListAdd($periodfI)
+	_CtrlListAdd($PRsingleChB)
+	_CtrlListAdd($PRmakeB)
+	_CtrlListAdd($PortConB)
+	#endregion _CtrlListAdd
+	#region GUICtrlSetData
+	$s = _CommListPorts(1)
+	$s1 = _StringExplode($s, "|")
+	GUICtrlSetData($PortN, $s, $s1[0])
+	GUICtrlSetData($PortSpeed, "9600|19200|57600|115200", "19200")
+	GUICtrlSetData($startAdrI, $startAdr)
+	GUICtrlSetData($endAdrI, $endAdr)
+	GUICtrlSetData($allBytesI, $allBytes)
+	GUICtrlSetData($periodsI, $PRnumS)
+	GUICtrlSetData($periodfI, $PRnumF)
+	#endregion GUICtrlSetData
+	#region GUICtrlSetStyle
+	GUICtrlSetStyle($VatNI, $ES_NUMBER)
+	GUICtrlSetStyle($FiscNI, $ES_NUMBER)
+	GUICtrlSetStyle($startAdrI, $ES_NUMBER)
+	GUICtrlSetStyle($endAdrI, $ES_NUMBER)
+	GUICtrlSetStyle($bdI, $ES_NUMBER)
+	GUICtrlSetStyle($allBytesI, $ES_NUMBER)
+	GUICtrlSetStyle($percI, $ES_NUMBER)
+	GUICtrlSetStyle($curBPSI, $ES_NUMBER)
+	#endregion GUICtrlSetStyle
+	#region GUICtrlSendMsg
+	$DTM_SETFORMAT_ = 0x1032
+	GUICtrlSendMsg($timeDT, $DTM_SETFORMAT_, 0, $DTstyle)
+	GUICtrlSendMsg($periodsDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
+	GUICtrlSendMsg($periodfDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
+	#endregion GUICtrlSendMsg
+	_AllCtrlDisable()
+	#region GUICtrlSetState
+	GUICtrlSetState($PortConB, $GUI_ENABLE)
+	GUICtrlSetState($bdI, $GUI_DISABLE)
+	GUICtrlSetState($percI, $GUI_DISABLE)
+	GUICtrlSetState($EldI, $GUI_DISABLE)
+	GUICtrlSetState($LeftI, $GUI_DISABLE)
+	GUICtrlSetState($curBPSI, $GUI_DISABLE)
+	GUICtrlSetState($periodFormDateCB, $GUI_CHECKED)
+	#endregion GUICtrlSetState
+	#region _ServiceListAdd
+	_ServiceListAdd($writeFlashB)
+	_ServiceListAdd($eraseFlashB)
+	_ServiceListAdd($cleanNsetB)
+	_ServiceListAdd($setVerB)
+	_ServiceListAdd($SetFactNB)
+	#endregion _ServiceListAdd
+	_ServiceDisable()
+	_PRmodeSet(0)
+	GUISetState()
+	GUICtrlSetState($PortConB, $GUI_FOCUS)
+	#endregion $_main
+	Return 0
+EndFunc   ;==>_GUIprepair
 Func _HFedit()
 	_FlagOn($FLAG_HF_EDIT)
 	GUISetState(@SW_DISABLE)
@@ -1434,6 +1284,22 @@ Func _HFwrite()
 	_FlagOff($FLAG_HF_WRITE)
 	Return $retVal
 EndFunc   ;==>_HFwrite
+Func _incSeq($i)
+	$i += 1
+	If $i > 95 Then $i = 0
+	Return $i
+EndFunc   ;==>_incSeq
+Func _Info($s, $mainHndl)
+	GUISetState(@SW_DISABLE, $mainHndl)
+	$r = MsgBox(4096 + 48, "Info", $s)
+	_DLog("_Info(): $r=" & $r & @CRLF)
+	$res = 0
+	If $r = 6 Then $res = 1
+	GUISetState(@SW_ENABLE, $mainHndl)
+	GUISetState(@SW_HIDE, $mainHndl)
+	GUISetState(@SW_SHOW, $mainHndl)
+	Return $res
+EndFunc   ;==>_Info
 Func _PCtimeGet()
 	_FlagOn($FLAG_TIME_GET_PC)
 	$data = @YEAR & "/" & @MON & "/" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC
@@ -1441,11 +1307,92 @@ Func _PCtimeGet()
 	_FlagOff($FLAG_TIME_GET_PC)
 	Return 0
 EndFunc   ;==>_PCtimeGet
+Func _Port()
+	If $portState Then
+		_ClosePort()
+		_AllCtrlDisable()
+		GUICtrlSetData($PortConB, $CONNECT_B_T)
+		GUICtrlSetState($PortConB, $GUI_ENABLE)
+		GUICtrlSetState($PortSpeed, $GUI_ENABLE)
+		GUICtrlSetState($PortN, $GUI_ENABLE)
+		$portState = 0
+	Else
+		$p = StringTrimLeft(GUICtrlRead($PortN), 3)
+		$sp = GUICtrlRead($PortSpeed)
+		$err = _OpenPort($p, $sp)
+		If $err Then
+			_DLog("_Port(): OpenPort() " & $err & @CRLF)
+			Return 1
+		EndIf
+		$i = _GetFiscInfo()
+		If $i Then
+			_DLog("_Port(): _GetFiscInfo() = " & $i & @CRLF)
+			Return 1
+		EndIf
+		_AllCtrlEnable()
+		GUICtrlSetData($PortConB, $CONNECT_B_T2)
+		GUICtrlSetState($PortSpeed, $GUI_DISABLE)
+		GUICtrlSetState($PortN, $GUI_DISABLE)
+		$portState = 1
+	EndIf
+	Return 0
+EndFunc   ;==>_Port
+Func _PRmakeDate()
+	If _TestConnect() = "" Then
+		_DLog("_PRmakeDate(): No response from printer" & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PR_MAKE_DATE, 1)
+	$retVal = 0
+	$ds = GUICtrlRead($periodsDT)
+	$df = GUICtrlRead($periodfDT)
+	$dd = "0000," & StringReplace(StringLeft($ds, 8), "-", "") & "," & StringReplace(StringLeft($df, 8), "-", "")
+	_DLog("_PRmakeDate(): $dd = " & $dd & @CRLF)
+	$failTry = 0
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(79, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = "" Then $failTry += 1
+	Until $rr <> "" Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog("_PRmakeDate(): No response while reading data" & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PR_MAKE_DATE, 1)
+	Return $retVal
+EndFunc   ;==>_PRmakeDate
+Func _PRmakeNum()
+	If _TestConnect() = "" Then
+		_DLog("_PRmakeNum(): No response from printer" & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PR_MAKE_NUM, 1)
+	$retVal = 0
+	$ds = GUICtrlRead($periodsI)
+	$df = GUICtrlRead($periodfI)
+	$dd = "0000," & $ds & "," & $df
+	_DLog("_PRmakeNum(): $dd = " & $dd & @CRLF)
+	$failTry = 0
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(95, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = "" Then $failTry += 1
+	Until $rr <> "" Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog("_PRmakeNum(): No response while reading data" & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PR_MAKE_NUM, 1)
+	Return $retVal
+EndFunc   ;==>_PRmakeNum
 Func _PRmodeGet()
 	Return _Flag($FLAG_PERIOD_MODE)
-EndFunc   ;==>_PRmodeGet
-Func _PRsingleModeGet()
-	Return _Flag($FLAG_PR_SINGLE_MODE, 1)
 EndFunc   ;==>_PRmodeGet
 Func _PRmodeSet($m)
 	_FlagOn($FLAG_PERIOD_MODE_FUNC, 1)
@@ -1464,6 +1411,9 @@ Func _PRmodeSet($m)
 	EndIf
 	_FlagOff($FLAG_PERIOD_MODE_FUNC, 1)
 EndFunc   ;==>_PRmodeSet
+Func _PRsingleModeGet()
+	Return _Flag($FLAG_PR_SINGLE_MODE, 1)
+EndFunc   ;==>_PRsingleModeGet
 Func _PRsingleModeSet($m)
 	_FlagOn($FLAG_PR_SINGLE_MODE_FUNC, 1)
 	If $m Then
@@ -1476,7 +1426,7 @@ Func _PRsingleModeSet($m)
 		_FlagOff($FLAG_PR_SINGLE_MODE, 1)
 	EndIf
 	_FlagOff($FLAG_PR_SINGLE_MODE_FUNC, 1)
-EndFunc
+EndFunc   ;==>_PRsingleModeSet
 Func _ServiceDisable()
 	_FlagOn($FLAG_SERVICE_DISABLED, 1)
 	_FlagOff($FLAG_SERVICE)
@@ -1493,6 +1443,24 @@ Func _ServiceEnable()
 	Next
 	_FlagOff($FLAG_SERVICE_ENABLED, 1)
 EndFunc   ;==>_ServiceEnable
+Func _ServiceInput($mainHndl)
+	_FlagOn($FLAG_SERVICE_INPUT, 1)
+	GUISetState(@SW_DISABLE, $mainHndl)
+	$pas = InputBox("Service mode", "Enter service password", "", "#", 160, 110)
+	$res = 0
+	If $pas <> "75296" Then $res = 1
+	GUISetState(@SW_ENABLE, $mainHndl)
+	GUISetState(@SW_HIDE, $mainHndl)
+	GUISetState(@SW_SHOW, $mainHndl)
+	Return $res
+	_FlagOff($FLAG_SERVICE_INPUT, 1)
+EndFunc   ;==>_ServiceInput
+Func _ServiceListAdd($h)
+	If $SLmax < $MAX_SL Then
+		$serviceList[$SLmax] = $h
+		$SLmax += 1
+	EndIf
+EndFunc   ;==>_ServiceListAdd
 Func _SetFactN($mainHndl)
 	If _TestConnect() = "" Then
 		_DLog("_SetFactN(): No response from printer" & @CRLF)
@@ -1674,4 +1642,35 @@ Func _SetVer()
 	_FlagOff($FLAG_FISC_SET_VER)
 	Return $retVal
 EndFunc   ;==>_SetVer
-#endregion Processing functions
+Func _StartMainLoop()
+	$loopTimer = TimerInit()
+	$oldTime = 0
+	While Not _Flag($FLAG_EXIT_GUI)
+		$Time = TimerDiff($loopTimer)
+		If Int($Time / 500) <> $oldTime Then
+			$oldTime = Int($Time / 500)
+			_CheckRange()
+			If Not $portState Then _PCtimeGet()
+		EndIf
+	WEnd
+	Return 0
+EndFunc   ;==>_StartMainLoop
+Func _TestConnect()
+	$res = _SendCMD(74, "W", $seq)
+	$rrRaw = _ReceiveAll()
+	$rr = _Validate($rrRaw)
+	$data = _GetData(_GetBody($rr))
+	If StringLen($data) = 6 Then $statusBytes = $data
+	Return $data
+EndFunc   ;==>_TestConnect
+Func _Warn($s, $mainHndl)
+	GUISetState(@SW_DISABLE, $mainHndl)
+	$r = MsgBox(4096 + 256 + 16 + 4, "Warning!", $s)
+	_DLog("_Warn(): $r=" & $r & @CRLF)
+	$res = 0
+	If $r = 6 Then $res = 1
+	GUISetState(@SW_ENABLE, $mainHndl)
+	GUISetState(@SW_HIDE, $mainHndl)
+	GUISetState(@SW_SHOW, $mainHndl)
+	Return $res
+EndFunc   ;==>_Warn
