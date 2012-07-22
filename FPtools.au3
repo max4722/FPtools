@@ -1646,6 +1646,7 @@ Func _StartMainLoop()
 	$loopTimer = TimerInit()
 	$oldTime = 0
 	While Not _Flag($FLAG_EXIT_GUI)
+		_checkGUImsg()
 		$Time = TimerDiff($loopTimer)
 		If Int($Time / 500) <> $oldTime Then
 			$oldTime = Int($Time / 500)
