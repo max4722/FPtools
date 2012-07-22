@@ -223,7 +223,7 @@ Func _checkGUImsg()
 						_DLog("_checkGUImsg(): Service password don't match" & @CRLF)
 						GUICtrlSetState($m, $GUI_UNCHECKED)
 					EndIf
-				ElseIf _Flag($FLAG_SERVICE) And GUICtrlRead($m) = $GUI_CHECKED Then
+				ElseIf _Flag($FLAG_SERVICE) And GUICtrlRead($m) = $GUI_UNCHECKED Then
 					_ServiceDisable()
 				EndIf
 			Case $m = $periodFormDateCB
