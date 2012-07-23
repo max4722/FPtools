@@ -1,9 +1,9 @@
-#region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Outfile=bin\FPtools.exe
 #AutoIt3Wrapper_Compression=4
+#AutoIt3Wrapper_Res_requestedExecutionLevel=highestAvailable
 #Tidy_Parameters=/sfc
-#AutoIt3Wrapper_Run_Obfuscator=y
-#Obfuscator_Parameters=/cs=1 /cn=1 /cf=1 /cv=1 /sf=1 /sv=1
-#endregion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 Opt("MustDeclareVars", 1)
 #include <3530Ser.au3>
 #include <GUIConstantsEx.au3>
