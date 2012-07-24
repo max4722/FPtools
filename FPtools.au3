@@ -245,7 +245,7 @@ Func _checkGUImsg()
 				If _PRsingleModeGet() = 0 And GUICtrlRead($m) = $GUI_CHECKED Then
 					_PRsingleModeSet(1)
 					_DLog('_checkGUImsg(): _PRsingleModeGet() = ' & _PRsingleModeGet() & @CRLF)
-				ElseIf _PRsingleModeGet() And GUICtrlRead($m) = $GUI_CHECKED Then
+				ElseIf _PRsingleModeGet() And GUICtrlRead($m) = $GUI_UNCHECKED Then
 					_PRsingleModeSet(0)
 				EndIf
 		EndSelect
@@ -333,11 +333,7 @@ Func _CheckRange()
 		$PRnumS = $i
 		GUICtrlSetData($periodsI, $PRnumS)
 	EndIf
-	If _PRsingleModeGet() Then
-		$PRnumF = $PRnumS
-	Else
-		$PRnumF = GUICtrlRead($periodfI)
-	EndIf
+	$PRnumF = GUICtrlRead($periodfI)
 	$i = _CheckInput($PRnumF, $PR_NUM_MIN, $PR_NUM_MAX, $PR_NUM_F_DEFAULT)
 	If $i <> $PRnumF Then
 		_DLog('Not correct $PRnumF, setting to default value' & @CRLF)
@@ -1417,6 +1413,8 @@ EndFunc   ;==>_PRsingleModeGet
 Func _PRsingleModeSet($m)
 	_FlagOn($FLAG_PR_SINGLE_MODE_FUNC, 1)
 	If $m Then
+		GUICtrlSetData($periodfI, $PRnumS)
+		;GUICtrlSetData($periodfDT, $)
 		GUICtrlSetState($periodfI, $GUI_DISABLE)
 		GUICtrlSetState($periodfDT, $GUI_DISABLE)
 		_FlagOn($FLAG_PR_SINGLE_MODE, 1)
