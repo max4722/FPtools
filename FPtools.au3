@@ -4,7 +4,6 @@
 #AutoIt3Wrapper_Res_requestedExecutionLevel=highestAvailable
 #Tidy_Parameters=/sfc
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-Opt('MustDeclareVars', 1)
 #include <3530Ser.au3>
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
@@ -14,6 +13,7 @@ Opt('MustDeclareVars', 1)
 #include <ComboConstants.au3>
 #include <DateTimeConstants.au3>
 #include <Array.au3>
+Opt('MustDeclareVars', 1)
 #region ConstsVars
 Global Const $FLAG_EXIT_RWflash = 0x1 ;1
 Global Const $FLAG_EXIT_GUI = 0x2 ;2
@@ -95,6 +95,7 @@ Global $startAdrI, $endAdrI, $TaxRateAI, $TaxRateBI, $TaxRateVI, $TaxRateGI, $bd
 Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVChB, $TaxRateGChB, $FiscRefreshB, $FiscalizeB, $SetTaxRatesB
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
+Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -134,6 +135,7 @@ Func _AllCtrlEnable()
 	_FlagOff($FLAG_ALLCTRL_ENABLE, 1)
 EndFunc   ;==>_AllCtrlEnable
 Func _checkGUImsg()
+	Local $msg, $m, $h, $retVal, $res
 	$msg = GUIGetMsg(1)
 	$m = $msg[0]
 	$h = $msg[1]
@@ -292,6 +294,7 @@ Func _CheckInput($var, $min, $max, $defv)
 	EndIf
 EndFunc   ;==>_CheckInput
 Func _CheckRange()
+	Local $i
 	;_DLog('$allBytes=' & $allBytes & ' GUICtrlRead($allBytesI)=' & GUICtrlRead($allBytesI) & @CRLF)
 	$allBytes = GUICtrlRead($allBytesI)
 	$i = _CheckInput($allBytes, $ALL_BYTES_MIN, $ALL_BYTES_MAX, $ALL_BYTES_DEFAULT)
@@ -347,6 +350,7 @@ Func _CheckRange()
 	EndIf
 EndFunc   ;==>_CheckRange
 Func _CleanNSet($mainHndl)
+	Local $retVal
 	_FlagOn($FLAG_FISC_CLEAN_N_SET)
 	_DLog('_CleanNSet(): Starting _FlashErase()... ' & @CRLF)
 	$retVal = _FlashErase()
@@ -391,6 +395,7 @@ Func _CtrlListAdd($h)
 	EndIf
 EndFunc   ;==>_CtrlListAdd
 Func _Fiscalize($mainHndl)
+	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_Fiscalize(): No response from printer' & @CRLF)
 		Return 1
@@ -431,12 +436,14 @@ Func _Fiscalize($mainHndl)
 	Return $retVal
 EndFunc   ;==>_Fiscalize
 Func _FiscRefresh()
+	Local $retVal
 	_FlagOn($FLAG_FISC_REFRESH)
 	$retVal = _GetFiscInfo()
 	_FlagOff($FLAG_FISC_REFRESH)
 	Return $retVal
 EndFunc   ;==>_FiscRefresh
 Func _Flag($f, $i = 0)
+	Local $r
 	$r = BitAND($guiState[$i], $f)
 	If $r Then
 		Return 1
@@ -451,6 +458,7 @@ Func _FlagOn($f, $i = 0)
 	$guiState[$i] = BitOR($guiState[$i], $f)
 EndFunc   ;==>_FlagOn
 Func _FlashErase()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_FlashErase(): No response from printer' & @CRLF)
 		Return 1
@@ -481,6 +489,7 @@ Func _FlashErase()
 	Return $retVal
 EndFunc   ;==>_FlashErase
 Func _FlashOpenNwrite()
+	Local $filename, $errStatus, $file, $FFcounter, $beg, $oldT, $retVal, $maxk, $bs, $dd, $failTry, $res, $rrRaw, $rr, $data, $timerD, $fileSize, $adr
 	GUISetState(@SW_DISABLE, $_main)
 	$filename = FileOpenDialog('Open flash memory as', StringRight($FactN, 7), 'Binary (*.bin)|All (*.*)')
 	$errStatus = @error
@@ -557,6 +566,7 @@ Func _FlashOpenNwrite()
 	Return $retVal
 EndFunc   ;==>_FlashOpenNwrite
 Func _FlashReadNsave()
+	Local $filename, $errStatus, $file, $FFcounter, $beg, $oldT, $retVal, $maxk, $bs, $dd, $failTry, $res, $rrRaw, $rr, $data, $timerD, $fileSize
 	GUISetState(@SW_DISABLE, $_main)
 	$filename = FileSaveDialog('Save flash memory as', '', 'Binary (*.bin)|All (*.*)', 16, StringRight($FactN, 7))
 	$errStatus = @error
@@ -635,6 +645,7 @@ Func _FlashReadNsave()
 	Return $retVal
 EndFunc   ;==>_FlashReadNsave
 Func _FPtimeGet()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_FPtimeGet(): No response from printer' & @CRLF)
 		Return 1
@@ -662,6 +673,7 @@ Func _FPtimeGet()
 	Return $retVal
 EndFunc   ;==>_FPtimeGet
 Func _FPtimeSet()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_FPtimeSet(): No response from printer' & @CRLF)
 		Return 1
@@ -686,6 +698,7 @@ Func _FPtimeSet()
 	Return $retVal
 EndFunc   ;==>_FPtimeSet
 Func _GetFiscInfo()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data, $i, $j
 	If _TestConnect() = '' Then
 		_DLog('_GetFiscInfo(): No response from printer' & @CRLF)
 		Return 1
@@ -792,6 +805,7 @@ Func _GetFiscInfo()
 	Return $retVal
 EndFunc   ;==>_GetFiscInfo
 Func _GetStatistics($bd, $t)
+	Local $secEld, $curBPS, $minEld, $secLeft, $minLeft, $perc, $s, $minstr
 	$secEld = $t / 1000
 	$curBPS = $bd / $secEld
 	$minEld = Int($secEld / 60)
@@ -815,6 +829,7 @@ Func _GetStatistics($bd, $t)
 	Return $s
 EndFunc   ;==>_GetStatistics
 Func _GetStatusB()
+	Local $sdat, $s
 	Dim $st[6][8]
 	If $statusBytes = '' Or StringLen($statusBytes) <> 6 Then
 		_DLog('_GetStatus(): Not correct length (' & StringLen($statusBytes) & ') of $statusBytes' & @CRLF)
@@ -907,6 +922,8 @@ Func _GUIdel()
 	Return 0
 EndFunc   ;==>_GUIdel
 Func _GUIprepair()
+	Local $s, $s1
+	Local Const $DTM_SETFORMAT_ = 0x1032
 	#region $_stat
 	$_stat = GUICreate('Status', 400, 300)
 	$textE = GUICtrlCreateEdit('', 0, 0, 400, 300)
@@ -1056,7 +1073,6 @@ Func _GUIprepair()
 	GUICtrlSetStyle($curBPSI, $ES_NUMBER)
 	#endregion GUICtrlSetStyle
 	#region GUICtrlSendMsg
-	$DTM_SETFORMAT_ = 0x1032
 	GUICtrlSendMsg($timeDT, $DTM_SETFORMAT_, 0, $DTstyle)
 	GUICtrlSendMsg($periodsDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
 	GUICtrlSendMsg($periodfDT, $DTM_SETFORMAT_, 0, $DTstyleDate)
@@ -1102,6 +1118,7 @@ Func _HFedit()
 	_FlagOff($FLAG_HF_EDIT)
 EndFunc   ;==>_HFedit
 Func _HFeditRefresh()
+	Local $s, $cr
 	_FlagOn($FLAG_HF_EDIT_REFRESH)
 	$s = ''
 	$cr = @CRLF
@@ -1114,6 +1131,7 @@ Func _HFeditRefresh()
 	Return $s
 EndFunc   ;==>_HFeditRefresh
 Func _HFeditStore()
+	Local $res, $s
 	_FlagOn($FLAG_HF_EDIT_STORE)
 	$res = GUICtrlRead($HFeditE)
 	$s = StringSplit($res, @CRLF)
@@ -1129,6 +1147,7 @@ Func _HFeditStore()
 	Return $s
 EndFunc   ;==>_HFeditStore
 Func _HFopen($mainHndl)
+	Local $errStatus, $retVal, $k, $ss, $snum
 	GUISetState(@SW_DISABLE, $mainHndl)
 	Local $filename = FileOpenDialog('Open header/footer as', '', 'Binary (*.FPH)|Text (*.txt)|All (*.*)')
 	$errStatus = @error
@@ -1181,6 +1200,7 @@ Func _HFopen($mainHndl)
 	Return $retVal
 EndFunc   ;==>_HFopen
 Func _HFread()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_HFread(): No response from printer' & @CRLF)
 		Return 1
@@ -1215,8 +1235,9 @@ Func _HFread()
 	Return $retVal
 EndFunc   ;==>_HFread
 Func _HFsave($mainHndl)
+	Local $errStatus, $retVal, $res, $filename
 	GUISetState(@SW_DISABLE, $mainHndl)
-	Local $filename = FileSaveDialog('Save header/footer as', '', 'Binary (*.FPH)|Text (*.txt)|All (*.*)', 16, StringRight($FactN, 7))
+	$filename = FileSaveDialog('Save header/footer as', '', 'Binary (*.FPH)|Text (*.txt)|All (*.*)', 16, StringRight($FactN, 7))
 	$errStatus = @error
 	GUISetState(@SW_ENABLE, $mainHndl)
 	GUISetState(@SW_HIDE, $mainHndl)
@@ -1250,6 +1271,7 @@ Func _HFsave($mainHndl)
 	Return $retVal
 EndFunc   ;==>_HFsave
 Func _HFwrite()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_HFwrite(): No response from printer' & @CRLF)
 		Return 1
@@ -1286,6 +1308,7 @@ Func _incSeq($i)
 	Return $i
 EndFunc   ;==>_incSeq
 Func _Info($s, $mainHndl)
+	Local $r, $res
 	GUISetState(@SW_DISABLE, $mainHndl)
 	$r = MsgBox(4096 + 48, 'Info', $s)
 	_DLog('_Info(): $r=' & $r & @CRLF)
@@ -1297,6 +1320,7 @@ Func _Info($s, $mainHndl)
 	Return $res
 EndFunc   ;==>_Info
 Func _PCtimeGet()
+	Local $data
 	_FlagOn($FLAG_TIME_GET_PC)
 	$data = @YEAR & '/' & @MON & '/' & @MDAY & ' ' & @HOUR & ':' & @MIN & ':' & @SEC
 	GUICtrlSetData($timeDT, $data)
@@ -1304,6 +1328,7 @@ Func _PCtimeGet()
 	Return 0
 EndFunc   ;==>_PCtimeGet
 Func _Port()
+	Local $p, $sp, $err, $i
 	If $portState Then
 		_ClosePort()
 		_AllCtrlDisable()
@@ -1334,6 +1359,7 @@ Func _Port()
 	Return 0
 EndFunc   ;==>_Port
 Func _PRmakeDate()
+	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_PRmakeDate(): No response from printer' & @CRLF)
 		Return 1
@@ -1361,6 +1387,7 @@ Func _PRmakeDate()
 	Return $retVal
 EndFunc   ;==>_PRmakeDate
 Func _PRmakeNum()
+	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_PRmakeNum(): No response from printer' & @CRLF)
 		Return 1
@@ -1442,6 +1469,7 @@ Func _ServiceEnable()
 	_FlagOff($FLAG_SERVICE_ENABLED, 1)
 EndFunc   ;==>_ServiceEnable
 Func _ServiceInput($mainHndl)
+	Local $pas, $res
 	_FlagOn($FLAG_SERVICE_INPUT, 1)
 	GUISetState(@SW_DISABLE, $mainHndl)
 	$pas = InputBox('Service mode', 'Enter service password', '', '#', 160, 110)
@@ -1460,6 +1488,7 @@ Func _ServiceListAdd($h)
 	EndIf
 EndFunc   ;==>_ServiceListAdd
 Func _SetFactN($mainHndl)
+	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_SetFactN(): No response from printer' & @CRLF)
 		Return 1
@@ -1495,6 +1524,7 @@ Func _SetFactN($mainHndl)
 	Return $retVal
 EndFunc   ;==>_SetFactN
 Func _SetFiscN($mainHndl)
+	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_SetFiscN(): No response from printer' & @CRLF)
 		Return 1
@@ -1530,6 +1560,7 @@ Func _SetFiscN($mainHndl)
 	Return $retVal
 EndFunc   ;==>_SetFiscN
 Func _SetTaxRates($mainHndl)
+	Local $iA, $iB, $iV, $iG, $retVal, $jA, $jB, $jV, $jG, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_SetTaxRates(): No response from printer' & @CRLF)
 		Return 1
@@ -1577,6 +1608,7 @@ Func _SetTaxRates($mainHndl)
 	Return $retVal
 EndFunc   ;==>_SetTaxRates
 Func _SetVatN($mainHndl)
+	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_SetVatN(): No response from printer' & @CRLF)
 		Return 1
@@ -1612,6 +1644,7 @@ Func _SetVatN($mainHndl)
 	Return $retVal
 EndFunc   ;==>_SetVatN
 Func _SetVer()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
 		_DLog('_SetVer(): No response from printer' & @CRLF)
 		Return 1
@@ -1641,6 +1674,7 @@ Func _SetVer()
 	Return $retVal
 EndFunc   ;==>_SetVer
 Func _StartMainLoop()
+	Local $loopTimer, $oldTime, $Time
 	$loopTimer = TimerInit()
 	$oldTime = 0
 	While Not _Flag($FLAG_EXIT_GUI)
@@ -1655,6 +1689,7 @@ Func _StartMainLoop()
 	Return 0
 EndFunc   ;==>_StartMainLoop
 Func _TestConnect()
+	Local $res, $rrRaw, $rr, $data
 	$res = _SendCMD(74, 'W', $seq)
 	$rrRaw = _ReceiveAll()
 	$rr = _Validate($rrRaw)
@@ -1663,6 +1698,7 @@ Func _TestConnect()
 	Return $data
 EndFunc   ;==>_TestConnect
 Func _Warn($s, $mainHndl)
+	Local $r, $res
 	GUISetState(@SW_DISABLE, $mainHndl)
 	$r = MsgBox(4096 + 256 + 16 + 4, 'Warning!', $s)
 	_DLog('_Warn(): $r=' & $r & @CRLF)
