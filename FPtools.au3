@@ -61,6 +61,9 @@ Global Const $FLAG_PR_MAKE_NUM = 0x200
 Global Const $FLAG_PR_MAKE_DATE = 0x400
 Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800
 Global Const $FLAG_PRINT_DIAG = 0x1000
+Global Const $FLAG_PRINT_X = 0x2000
+Global Const $FLAG_PRINT_Z = 0x4000
+
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
 Global Const $CONNECT_B_T2 = 'Disconnect'
@@ -96,7 +99,7 @@ Global $startAdrI, $endAdrI, $TaxRateAI, $TaxRateBI, $TaxRateVI, $TaxRateGI, $bd
 Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVChB, $TaxRateGChB, $FiscRefreshB, $FiscalizeB, $SetTaxRatesB
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
-Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB
+Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -253,6 +256,10 @@ Func _checkGUImsg()
 				EndIf
 			Case $m = $PrintDiagB
 				$retVal = _PrintDiag()
+			Case $m = $PrintXB
+				$retVal = _PrintX()
+			Case $m = $PrintZB
+				$retVal = _PrintZ()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -1012,6 +1019,8 @@ Func _GUIprepair()
 	$PortConB = GUICtrlCreateButton('Connect', 170, 330, 60, 20)
 	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 330, 60, 20)
 	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
+	$PrintXB = GUICtrlCreateButton('X', 10, 240, 50, 20)
+	$PrintZB = GUICtrlCreateButton('Z', 10, 270, 50, 20)
 	#endregion GUICtrlCreate
 	#region _CtrlListAdd
 	_CtrlListAdd($SetFactNB)
@@ -1055,6 +1064,8 @@ Func _GUIprepair()
 	_CtrlListAdd($PRmakeB)
 	_CtrlListAdd($PortConB)
 	_CtrlListAdd($PrintDiagB)
+	_CtrlListAdd($PrintXB)
+	_CtrlListAdd($PrintZB)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1384,6 +1395,54 @@ Func _PrintDiag()
 		$retVal = 1
 	EndIf
 	_FlagOff($FLAG_PRINT_DIAG, 1)
+	Return $retVal
+EndFunc
+Func _PrintX()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintX(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_X, 1)
+	$retVal = 0
+	$dd = '0000,2'
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(69, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintX(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_X, 1)
+	Return $retVal
+EndFunc
+Func _PrintZ()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintZ(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_Z, 1)
+	$retVal = 0
+	$dd = '0000,0'
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(69, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintZ(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_Z, 1)
 	Return $retVal
 EndFunc
 Func _PRmakeDate()
