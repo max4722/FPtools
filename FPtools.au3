@@ -1134,11 +1134,11 @@ Func _HFeditStore()
 	Local $res, $s
 	_FlagOn($FLAG_HF_EDIT_STORE)
 	$res = GUICtrlRead($HFeditE)
-	$s = StringSplit($res, @CRLF)
+	$s = StringSplit($res, @CRLF, 1)
 	;_ArrayDisplay($s)
 	For $i = 0 To 7
 		If Int($s[0]) > $i Then
-			$HFstr[$i] = $s[2 * $i + 1]
+			$HFstr[$i] = $s[$i + 1]
 		Else
 			$HFstr[$i] = ''
 		EndIf
