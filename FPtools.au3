@@ -48,18 +48,19 @@ Global Const $FLAG_HF_EDIT = 0x20000000 ;536870912
 Global Const $FLAG_HF_EDIT_REFRESH = 0x40000000 ;1073741824
 Global Const $FLAG_HF_EDIT_STORE = 0x80000000 ;2147483648
 
-Global Const $FLAG_SERVICE_INPUT = 0x1 ;0x100000000
-Global Const $FLAG_SERVICE_ENABLED = 0x2 ;0x200000000
-Global Const $FLAG_SERVICE_DISABLED = 0x4 ;0x400000000
-Global Const $FLAG_FISC_FISCALIZE_TYPE = 0x8 ;0x800000000
-Global Const $FLAG_PR_SINGLE_MODE = 0x10 ;0x1000000000
-Global Const $FLAG_PERIOD_MODE_FUNC = 0x20 ;0x2000000000
-Global Const $FLAG_ALLCTRL = 0x40 ;0x4000000000
-Global Const $FLAG_ALLCTRL_DISABLE = 0x80 ;0x8000000000
-Global Const $FLAG_ALLCTRL_ENABLE = 0x100 ;0x10000000000
-Global Const $FLAG_PR_MAKE_NUM = 0x200 ;0x2000000000
-Global Const $FLAG_PR_MAKE_DATE = 0x400 ;0x4000000000
-Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800 ;0x8000000000
+Global Const $FLAG_SERVICE_INPUT = 0x1
+Global Const $FLAG_SERVICE_ENABLED = 0x2
+Global Const $FLAG_SERVICE_DISABLED = 0x4
+Global Const $FLAG_FISC_FISCALIZE_TYPE = 0x8
+Global Const $FLAG_PR_SINGLE_MODE = 0x10
+Global Const $FLAG_PERIOD_MODE_FUNC = 0x20
+Global Const $FLAG_ALLCTRL = 0x40
+Global Const $FLAG_ALLCTRL_DISABLE = 0x80
+Global Const $FLAG_ALLCTRL_ENABLE = 0x100
+Global Const $FLAG_PR_MAKE_NUM = 0x200
+Global Const $FLAG_PR_MAKE_DATE = 0x400
+Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800
+Global Const $FLAG_PRINT_DIAG = 0x1000
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
 Global Const $CONNECT_B_T2 = 'Disconnect'
@@ -95,7 +96,7 @@ Global $startAdrI, $endAdrI, $TaxRateAI, $TaxRateBI, $TaxRateVI, $TaxRateGI, $bd
 Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVChB, $TaxRateGChB, $FiscRefreshB, $FiscalizeB, $SetTaxRatesB
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
-Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL
+Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -250,6 +251,8 @@ Func _checkGUImsg()
 				ElseIf _PRsingleModeGet() And GUICtrlRead($m) = $GUI_UNCHECKED Then
 					_PRsingleModeSet(0)
 				EndIf
+			Case $m = $PrintDiagB
+				$retVal = _PrintDiag()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -1008,6 +1011,7 @@ Func _GUIprepair()
 	$PortSpeed = GUICtrlCreateCombo('', 90, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$PortConB = GUICtrlCreateButton('Connect', 170, 330, 60, 20)
 	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 330, 60, 20)
+	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
 	#endregion GUICtrlCreate
 	#region _CtrlListAdd
 	_CtrlListAdd($SetFactNB)
@@ -1050,6 +1054,7 @@ Func _GUIprepair()
 	_CtrlListAdd($PRsingleChB)
 	_CtrlListAdd($PRmakeB)
 	_CtrlListAdd($PortConB)
+	_CtrlListAdd($PrintDiagB)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1358,6 +1363,29 @@ Func _Port()
 	EndIf
 	Return 0
 EndFunc   ;==>_Port
+Func _PrintDiag()
+	Local $retVal, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintDiag(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_DIAG, 1)
+	$retVal = 0
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(71, '', $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintDiag(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_DIAG, 1)
+	Return $retVal
+EndFunc
 Func _PRmakeDate()
 	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
