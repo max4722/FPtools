@@ -64,6 +64,7 @@ Global Const $FLAG_PRINT_DIAG = 0x1000
 Global Const $FLAG_PRINT_X = 0x2000
 Global Const $FLAG_PRINT_Z = 0x4000
 Global Const $FLAG_PRINT_CUT = 0x8000
+Global Const $FLAG_IND_SHOW_TIME = 0x10000
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -1486,7 +1487,30 @@ Func _PrintCut()
 	_FlagOff($FLAG_PRINT_CUT, 1)
 	Return $retVal
 EndFunc
-
+Func _IndShowTime()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_IndShowTime(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_IND_SHOW_TIME, 1)
+	$retVal = 0
+	$dd = ''
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(63, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_IndShowTime(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_IND_SHOW_TIME, 1)
+	Return $retVal
+EndFunc
 Func _PRmakeDate()
 	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -1816,7 +1840,11 @@ Func _StartMainLoop()
 		EndIf
 		If $TimeDivPCtimeGet <> $oldTimePCtimeGet Then
 			$oldTimePCtimeGet = $TimeDivPCtimeGet
-			If Not $portState Then _PCtimeGet()
+			If Not $portState Then
+				_PCtimeGet()
+			Else
+				_IndShowTime()
+			EndIf
 		EndIf
 	WEnd
 	Return 0
