@@ -63,6 +63,7 @@ Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800
 Global Const $FLAG_PRINT_DIAG = 0x1000
 Global Const $FLAG_PRINT_X = 0x2000
 Global Const $FLAG_PRINT_Z = 0x4000
+Global Const $FLAG_PRINT_CUT = 0x8000
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -102,7 +103,7 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB
+Global $HFPrintDiagB, $PrintCutB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -263,6 +264,8 @@ Func _checkGUImsg()
 				$retVal = _PrintX()
 			Case $m = $PrintZB
 				$retVal = _PrintZ()
+			Case $m = $PrintCutB
+				$retVal = _PrintCut()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -1031,6 +1034,7 @@ Func _GUIprepair()
 	$PortConB = GUICtrlCreateButton('Connect', 170, 330, 60, 20)
 	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 330, 60, 20)
 	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
+	$PrintCutB = GUICtrlCreateButton('Cut', 310, 300, 50, 20)
 	$PrintXB = GUICtrlCreateButton('X', 10, 240, 50, 20)
 	$PrintZB = GUICtrlCreateButton('Z', 10, 270, 50, 20)
 	#endregion GUICtrlCreate
@@ -1078,6 +1082,7 @@ Func _GUIprepair()
 	_CtrlListAdd($PrintDiagB)
 	_CtrlListAdd($PrintXB)
 	_CtrlListAdd($PrintZB)
+	_CtrlListAdd($PrintCutB)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1457,6 +1462,31 @@ Func _PrintZ()
 	_FlagOff($FLAG_PRINT_Z, 1)
 	Return $retVal
 EndFunc
+Func _PrintCut()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintCut(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_CUT, 1)
+	$retVal = 0
+	$dd = ''
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(45, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintCut(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_CUT, 1)
+	Return $retVal
+EndFunc
+
 Func _PRmakeDate()
 	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
