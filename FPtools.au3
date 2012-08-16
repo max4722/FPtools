@@ -91,6 +91,8 @@ Global Const $S_X = 30
 Global Const $S_Y = 60
 Global Const $SP_X = 10
 Global Const $SP_Y = 10
+Global Const $DelayCheckRange = 50
+Global Const $DelayPCtimeGet = 500
 Dim $guiState[2] = [0, 0]
 Global $FactNI, $FiscNI, $VatNI
 Global $_main, $_stat, $_hf
@@ -100,6 +102,7 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
+Global $HFPrintDiagB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -292,6 +295,8 @@ Func _checkGUImsg()
 				If $res Then
 					_DLog('_checkGUImsg(): _HFwrite() = ' & $res & @CRLF)
 				EndIf
+			Case $m = $HFPrintDiagB
+				_PrintDiag()
 		EndSelect
 	EndIf
 	;Return $guiState
@@ -304,7 +309,7 @@ Func _CheckInput($var, $min, $max, $defv)
 	EndIf
 EndFunc   ;==>_CheckInput
 Func _CheckRange()
-	Local $i
+	Local $i, $data
 	;_DLog('$allBytes=' & $allBytes & ' GUICtrlRead($allBytesI)=' & GUICtrlRead($allBytesI) & @CRLF)
 	$allBytes = GUICtrlRead($allBytesI)
 	$i = _CheckInput($allBytes, $ALL_BYTES_MIN, $ALL_BYTES_MAX, $ALL_BYTES_DEFAULT)
@@ -345,6 +350,12 @@ Func _CheckRange()
 		_DLog('Not correct $PRnumS, setting to default value' & @CRLF)
 		$PRnumS = $i
 		GUICtrlSetData($periodsI, $PRnumS)
+	EndIf
+	If _PRsingleModeGet() Then
+		GUICtrlSetData($periodfI, $PRnumS)
+		$data = GUICtrlRead($periodsDT)
+		$data = '20' & StringMid($data, 7, 2) & '/' & StringMid($data, 4, 2) & '/' & StringLeft($data, 2); & StringRight($data, 9)
+		GUICtrlSetData($periodfDT, $data)
 	EndIf
 	$PRnumF = GUICtrlRead($periodfI)
 	$i = _CheckInput($PRnumF, $PR_NUM_MIN, $PR_NUM_MAX, $PR_NUM_F_DEFAULT)
@@ -947,6 +958,7 @@ Func _GUIprepair()
 	$HFwriteB = GUICtrlCreateButton('Write', 10, 205 - 30, 50, 20, 0)
 	$HFopenB = GUICtrlCreateButton('Open', 70, 175 - 30, 50, 20, 0)
 	$HFsaveB = GUICtrlCreateButton('Save', 70, 205 - 30, 50, 20, 0)
+	$HFPrintDiagB = GUICtrlCreateButton('Diag', 130, 175 - 30, 50, 20, 0)
 	#endregion $_hf
 	#region $_main
 	$_main = GUICreate('FPtools', 367, 361)
@@ -1527,8 +1539,6 @@ EndFunc   ;==>_PRsingleModeGet
 Func _PRsingleModeSet($m)
 	_FlagOn($FLAG_PR_SINGLE_MODE_FUNC, 1)
 	If $m Then
-		GUICtrlSetData($periodfI, $PRnumS)
-		;GUICtrlSetData($periodfDT, $)
 		GUICtrlSetState($periodfI, $GUI_DISABLE)
 		GUICtrlSetState($periodfDT, $GUI_DISABLE)
 		_FlagOn($FLAG_PR_SINGLE_MODE, 1)
@@ -1761,15 +1771,21 @@ Func _SetVer()
 	Return $retVal
 EndFunc   ;==>_SetVer
 Func _StartMainLoop()
-	Local $loopTimer, $oldTime, $Time
+	Local $loopTimer, $Time, $TimeDivPCtimeGet, $TimeDivCheckRange, $oldTimePCtimeGet, $oldTimeCheckRange
 	$loopTimer = TimerInit()
-	$oldTime = 0
+	$oldTimePCtimeGet = 0
+	$oldTimeCheckRange = 0
 	While Not _Flag($FLAG_EXIT_GUI)
 		_checkGUImsg()
 		$Time = TimerDiff($loopTimer)
-		If Int($Time / 500) <> $oldTime Then
-			$oldTime = Int($Time / 500)
+		$TimeDivPCtimeGet = Int($Time / $DelayPCtimeGet)
+		$TimeDivCheckRange = Int($Time / $DelayCheckRange)
+		If $TimeDivCheckRange <> $oldTimeCheckRange Then
+			$oldTimeCheckRange = $TimeDivCheckRange
 			_CheckRange()
+		EndIf
+		If $TimeDivPCtimeGet <> $oldTimePCtimeGet Then
+			$oldTimePCtimeGet = $TimeDivPCtimeGet
 			If Not $portState Then _PCtimeGet()
 		EndIf
 	WEnd
