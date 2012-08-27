@@ -1,9 +1,9 @@
-#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Outfile=bin\FPtools.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_Res_requestedExecutionLevel=highestAvailable
 #Tidy_Parameters=/sfc
-#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#endregion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <3530Ser.au3>
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
@@ -17,54 +17,57 @@ Opt('MustDeclareVars', 1)
 #region ConstsVars
 Global Const $FLAG_EXIT_RWflash = 0x1 ;1
 Global Const $FLAG_EXIT_GUI = 0x2 ;2
-Global Const $FLAG_READ_FLASH = 0x4 ;4
-Global Const $FLAG_SERVICE = 0x8 ;8
-Global Const $FLAG_WRITE_FLASH = 0x10 ;16
-Global Const $FLAG_ERASE_FLASH = 0x20 ;32
-Global Const $FLAG_GET_FISC_INFO = 0x40 ;64
-Global Const $FLAG_PERIOD_MODE = 0x80 ;128
-Global Const $FLAG_TIME_SET = 0x100 ;256
-Global Const $FLAG_TIME_GET = 0x200 ;512
-Global Const $FLAG_TIME_GET_PC = 0x400 ;1024
-Global Const $FLAG_TIME_GET_FACT_N = 0x800 ;2048
-Global Const $FLAG_FISC_GET_VAT_N = 0x1000 ;4096
-Global Const $FLAG_FISC_GET_FISC_N = 0x2000 ;8192
-Global Const $FLAG_FISC_REFRESH = 0x4000 ;16384
-Global Const $FLAG_FISC_SET_FACT_N = 0x8000 ;32768
-Global Const $FLAG_FISC_SET_VAT_N = 0x10000 ;65536
-Global Const $FLAG_FISC_SET_FISC_N = 0x20000 ;131072
-Global Const $FLAG_FISC_SET_VER = 0x40000 ;262144
-Global Const $FLAG_FISCALIZE = 0x80000 ;524288
-Global Const $FLAG_FISC_SET_TAX = 0x100000 ;1048576
-Global Const $FLAG_FISC_CLEAN_N_SET = 0x200000 ;2097152
-Global Const $FLAG_FISC_GET_STATUS = 0x400000 ;4194304
-Global Const $FLAG_STATUS_EXIT = 0x800000 ;8388608
-Global Const $FLAG_HF_EXIT = 0x1000000 ;16777216
-Global Const $FLAG_HF_OPEN = 0x2000000 ;33554432
-Global Const $FLAG_HF_WRITE = 0x4000000 ;67108864
-Global Const $FLAG_HF_SAVE = 0x8000000 ;134217728
-Global Const $FLAG_HF_READ = 0x10000000 ;268435456
-Global Const $FLAG_HF_EDIT = 0x20000000 ;536870912
-Global Const $FLAG_HF_EDIT_REFRESH = 0x40000000 ;1073741824
-Global Const $FLAG_HF_EDIT_STORE = 0x80000000 ;2147483648
+Global Const $FLAG_READ_FLASH = 0x4 ;3
+Global Const $FLAG_SERVICE = 0x8 ;4
+Global Const $FLAG_WRITE_FLASH = 0x10 ;5
+Global Const $FLAG_ERASE_FLASH = 0x20 ;6
+Global Const $FLAG_GET_FISC_INFO = 0x40 ;7
+Global Const $FLAG_PERIOD_MODE = 0x80 ;8
+Global Const $FLAG_TIME_SET = 0x100 ;9
+Global Const $FLAG_TIME_GET = 0x200 ;10
+Global Const $FLAG_TIME_GET_PC = 0x400 ;11
+Global Const $FLAG_TIME_GET_FACT_N = 0x800 ;12
+Global Const $FLAG_FISC_GET_VAT_N = 0x1000 ;13
+Global Const $FLAG_FISC_GET_FISC_N = 0x2000 ;14
+Global Const $FLAG_FISC_REFRESH = 0x4000 ;15
+Global Const $FLAG_FISC_SET_FACT_N = 0x8000 ;16
+Global Const $FLAG_FISC_SET_VAT_N = 0x10000 ;17
+Global Const $FLAG_FISC_SET_FISC_N = 0x20000 ;18
+Global Const $FLAG_FISC_SET_VER = 0x40000 ;19
+Global Const $FLAG_FISCALIZE = 0x80000 ;20
+Global Const $FLAG_FISC_SET_TAX = 0x100000 ;21
+Global Const $FLAG_FISC_CLEAN_N_SET = 0x200000 ;22
+Global Const $FLAG_FISC_GET_STATUS = 0x400000 ;23
+Global Const $FLAG_STATUS_EXIT = 0x800000 ;24
+Global Const $FLAG_HF_EXIT = 0x1000000 ;25
+Global Const $FLAG_HF_OPEN = 0x2000000 ;26
+Global Const $FLAG_HF_WRITE = 0x4000000 ;27
+Global Const $FLAG_HF_SAVE = 0x8000000 ;28
+Global Const $FLAG_HF_READ = 0x10000000 ;29
+Global Const $FLAG_HF_EDIT = 0x20000000 ;30
+Global Const $FLAG_HF_EDIT_REFRESH = 0x40000000 ;31
+Global Const $FLAG_HF_EDIT_STORE = 0x80000000 ;32
 
-Global Const $FLAG_SERVICE_INPUT = 0x1
-Global Const $FLAG_SERVICE_ENABLED = 0x2
-Global Const $FLAG_SERVICE_DISABLED = 0x4
-Global Const $FLAG_FISC_FISCALIZE_TYPE = 0x8
-Global Const $FLAG_PR_SINGLE_MODE = 0x10
-Global Const $FLAG_PERIOD_MODE_FUNC = 0x20
-Global Const $FLAG_ALLCTRL = 0x40
-Global Const $FLAG_ALLCTRL_DISABLE = 0x80
-Global Const $FLAG_ALLCTRL_ENABLE = 0x100
-Global Const $FLAG_PR_MAKE_NUM = 0x200
-Global Const $FLAG_PR_MAKE_DATE = 0x400
-Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800
-Global Const $FLAG_PRINT_DIAG = 0x1000
-Global Const $FLAG_PRINT_X = 0x2000
-Global Const $FLAG_PRINT_Z = 0x4000
-Global Const $FLAG_PRINT_CUT = 0x8000
-Global Const $FLAG_IND_SHOW_TIME = 0x10000
+Global Const $FLAG_SERVICE_INPUT = 0x1 ;1
+Global Const $FLAG_SERVICE_ENABLED = 0x2 ;2
+Global Const $FLAG_SERVICE_DISABLED = 0x4 ;3
+Global Const $FLAG_FISC_FISCALIZE_TYPE = 0x8 ;4
+Global Const $FLAG_PR_SINGLE_MODE = 0x10 ;5
+Global Const $FLAG_PERIOD_MODE_FUNC = 0x20 ;6
+Global Const $FLAG_ALLCTRL = 0x40 ;7
+Global Const $FLAG_ALLCTRL_DISABLE = 0x80 ;8
+Global Const $FLAG_ALLCTRL_ENABLE = 0x100 ;9
+Global Const $FLAG_PR_MAKE_NUM = 0x200 ;10
+Global Const $FLAG_PR_MAKE_DATE = 0x400 ;11
+Global Const $FLAG_PR_SINGLE_MODE_FUNC = 0x800 ;12
+Global Const $FLAG_PRINT_DIAG = 0x1000 ;13
+Global Const $FLAG_PRINT_X = 0x2000 ;14
+Global Const $FLAG_PRINT_Z = 0x4000 ;15
+Global Const $FLAG_PRINT_CUT = 0x8000 ;16
+Global Const $FLAG_IND_SHOW_TIME = 0x10000 ;17
+Global Const $FLAG_FP_MODEL_MODE_SET = 0x20000 ;18
+Global Const $FLAG_FP_MODEL_STRING_GET_FULL = 0x40000 ;19
+Global Const $FLAG_FP_MODEL_STRING_GET = 0x80000 ;20
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -95,6 +98,9 @@ Global Const $SP_X = 10
 Global Const $SP_Y = 10
 Global Const $DelayCheckRange = 50
 Global Const $DelayPCtimeGet = 500
+Global Const $FP_MODEL_MODE_MIN = 0
+Global Const $FP_MODEL_MODE_MAX = 1
+Global Const $FP_MODEL_MODE_DEFAULT = 0
 Dim $guiState[2] = [0, 0]
 Global $FactNI, $FiscNI, $VatNI
 Global $_main, $_stat, $_hf
@@ -104,7 +110,7 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB, $PrintCutB
+Global $HFPrintDiagB, $PrintCutB, $FPmodel
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -118,10 +124,11 @@ Global $seq = 0
 Global $SLmax = 0, $CLmax = 0
 Global $PRnumS = $PR_NUM_S_DEFAULT
 Global $PRnumF = $PR_NUM_F_DEFAULT
-Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG
+Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmodelMode
 Global $statusBytes
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
+Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T','Ekselio']
 #endregion ConstsVars
 _GUIprepair()
 _StartMainLoop()
@@ -723,7 +730,7 @@ Func _FPtimeSet()
 	Return $retVal
 EndFunc   ;==>_FPtimeSet
 Func _GetFiscInfo()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data, $i, $j
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data, $i, $j, $m
 	If _TestConnect() = '' Then
 		_DLog('_GetFiscInfo(): No response from printer' & @CRLF)
 		Return 1
@@ -746,7 +753,13 @@ Func _GetFiscInfo()
 		_FlagOff($FLAG_GET_FISC_INFO)
 		Return 1
 	EndIf
-	$FactN = StringLeft(StringTrimLeft($data, 36), 10)
+	$m = _FPmodelModeGet()
+	Select
+		Case $m = 0
+			$FactN = StringLeft(StringTrimLeft($data, 36), 10)
+		Case $m = 1
+			$FactN = StringLeft(StringTrimLeft($data, 43), 10)
+	EndSelect
 	$FiscN = StringRight($data, 10)
 	$dd = ''
 	$failTry = 0
@@ -1038,6 +1051,7 @@ Func _GUIprepair()
 	$PrintCutB = GUICtrlCreateButton('Cut', 310, 300, 50, 20)
 	$PrintXB = GUICtrlCreateButton('X', 10, 240, 50, 20)
 	$PrintZB = GUICtrlCreateButton('Z', 10, 270, 50, 20)
+	$FPmodel = GUICtrlCreateCombo('', 10, 300, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	#endregion GUICtrlCreate
 	#region _CtrlListAdd
 	_CtrlListAdd($SetFactNB)
@@ -1095,6 +1109,8 @@ Func _GUIprepair()
 	GUICtrlSetData($allBytesI, $allBytes)
 	GUICtrlSetData($periodsI, $PRnumS)
 	GUICtrlSetData($periodfI, $PRnumF)
+	_FPmodelModeSet(0)
+	GUICtrlSetData($FPmodel, _FPmodelStringGetFull(), _FPmodelStringGet(_FPmodelModeGet()))
 	#endregion GUICtrlSetData
 	#region GUICtrlSetStyle
 	GUICtrlSetStyle($VatNI, $ES_NUMBER)
@@ -1341,6 +1357,30 @@ Func _incSeq($i)
 	If $i > 95 Then $i = 0
 	Return $i
 EndFunc   ;==>_incSeq
+Func _IndShowTime()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_IndShowTime(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_IND_SHOW_TIME, 1)
+	$retVal = 0
+	$dd = ''
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(63, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_IndShowTime(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_IND_SHOW_TIME, 1)
+	Return $retVal
+EndFunc   ;==>_IndShowTime
 Func _Info($s, $mainHndl)
 	Local $r, $res
 	GUISetState(@SW_DISABLE, $mainHndl)
@@ -1370,6 +1410,7 @@ Func _Port()
 		GUICtrlSetState($PortConB, $GUI_ENABLE)
 		GUICtrlSetState($PortSpeed, $GUI_ENABLE)
 		GUICtrlSetState($PortN, $GUI_ENABLE)
+		GUICtrlSetState($FPmodel, $GUI_ENABLE)
 		$portState = 0
 	Else
 		$p = StringTrimLeft(GUICtrlRead($PortN), 3)
@@ -1379,6 +1420,7 @@ Func _Port()
 			_DLog('_Port(): OpenPort() ' & $err & @CRLF)
 			Return 1
 		EndIf
+		_FPmodelModeSet(_ArraySearch($FPModelStrM, GUICtrlRead($FPmodel)))
 		$i = _GetFiscInfo()
 		If $i Then
 			_DLog('_Port(): _GetFiscInfo() = ' & $i & @CRLF)
@@ -1388,81 +1430,11 @@ Func _Port()
 		GUICtrlSetData($PortConB, $CONNECT_B_T2)
 		GUICtrlSetState($PortSpeed, $GUI_DISABLE)
 		GUICtrlSetState($PortN, $GUI_DISABLE)
+		GUICtrlSetState($FPmodel, $GUI_DISABLE)
 		$portState = 1
 	EndIf
 	Return 0
 EndFunc   ;==>_Port
-Func _PrintDiag()
-	Local $retVal, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintDiag(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	_FlagOn($FLAG_PRINT_DIAG, 1)
-	$retVal = 0
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(71, '', $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintDiag(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	_FlagOff($FLAG_PRINT_DIAG, 1)
-	Return $retVal
-EndFunc
-Func _PrintX()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintX(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	_FlagOn($FLAG_PRINT_X, 1)
-	$retVal = 0
-	$dd = '0000,2'
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(69, $dd, $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintX(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	_FlagOff($FLAG_PRINT_X, 1)
-	Return $retVal
-EndFunc
-Func _PrintZ()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintZ(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	_FlagOn($FLAG_PRINT_Z, 1)
-	$retVal = 0
-	$dd = '0000,0'
-	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(69, $dd, $seq)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintZ(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	_FlagOff($FLAG_PRINT_Z, 1)
-	Return $retVal
-EndFunc
 Func _PrintCut()
 	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -1486,31 +1458,78 @@ Func _PrintCut()
 	EndIf
 	_FlagOff($FLAG_PRINT_CUT, 1)
 	Return $retVal
-EndFunc
-Func _IndShowTime()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+EndFunc   ;==>_PrintCut
+Func _PrintDiag()
+	Local $retVal, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
-		_DLog('_IndShowTime(): No response from printer' & @CRLF)
+		_DLog('_PrintDiag(): No response from printer' & @CRLF)
 		Return 1
 	EndIf
-	_FlagOn($FLAG_IND_SHOW_TIME, 1)
+	_FlagOn($FLAG_PRINT_DIAG, 1)
 	$retVal = 0
-	$dd = ''
 	Do
 		$seq = _incSeq($seq)
-		$res = _SendCMD(63, $dd, $seq)
+		$res = _SendCMD(71, '', $seq)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
 		If $rr = '' Then $failTry += 1
 	Until $rr <> '' Or $failTry > $maxFailTry
 	If $failTry > $maxFailTry Then
-		_DLog('_IndShowTime(): No response while reading data' & @CRLF)
+		_DLog('_PrintDiag(): No response while reading data' & @CRLF)
 		$retVal = 1
 	EndIf
-	_FlagOff($FLAG_IND_SHOW_TIME, 1)
+	_FlagOff($FLAG_PRINT_DIAG, 1)
 	Return $retVal
-EndFunc
+EndFunc   ;==>_PrintDiag
+Func _PrintX()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintX(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_X, 1)
+	$retVal = 0
+	$dd = '0000,2'
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(69, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintX(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_X, 1)
+	Return $retVal
+EndFunc   ;==>_PrintX
+Func _PrintZ()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_PrintZ(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_PRINT_Z, 1)
+	$retVal = 0
+	$dd = '0000,0'
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(69, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_PrintZ(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_PRINT_Z, 1)
+	Return $retVal
+EndFunc   ;==>_PrintZ
 Func _PRmakeDate()
 	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -1629,8 +1648,8 @@ Func _ServiceInput($mainHndl)
 	GUISetState(@SW_ENABLE, $mainHndl)
 	GUISetState(@SW_HIDE, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
-	Return $res
 	_FlagOff($FLAG_SERVICE_INPUT, 1)
+	Return $res
 EndFunc   ;==>_ServiceInput
 Func _ServiceListAdd($h)
 	If $SLmax < $MAX_SL Then
@@ -1870,3 +1889,28 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
+Func _FPmodelModeGet()
+	Return $FPmodelMode
+EndFunc
+Func _FPmodelModeSet($m)
+	_FlagOn($FLAG_FP_MODEL_MODE_SET, 1)
+	$FPmodelMode = _CheckInput($m,$FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
+	_FlagOff($FLAG_FP_MODEL_MODE_SET, 1)
+EndFunc
+Func _FPmodelStringGetFull()
+	_FlagOn($FLAG_FP_MODEL_STRING_GET_FULL, 1)
+	Local $i, $str
+	$str = ''
+	For $i = $FP_MODEL_MODE_MIN To $FP_MODEL_MODE_MAX
+		$str = $str & $FPModelStrM[$i] & '|'
+	Next
+	_FlagOff($FLAG_FP_MODEL_STRING_GET_FULL, 1)
+	Return StringTrimRight($str, 1)
+EndFunc
+Func _FPmodelStringGet($m)
+	_FlagOn($FLAG_FP_MODEL_STRING_GET, 1)
+	Local $i
+	$i = _CheckInput($m, $FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
+	_FlagOff($FLAG_FP_MODEL_STRING_GET, 1)
+	Return $FPModelStrM[$i]
+EndFunc
