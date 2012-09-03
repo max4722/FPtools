@@ -70,6 +70,10 @@ Global Const $FLAG_FP_MODEL_STRING_GET_FULL = 0x40000 ;19
 Global Const $FLAG_FP_MODEL_STRING_GET = 0x80000 ;20
 Global Const $FLAG_CASH_IN = 0x100000 ;21
 Global Const $FLAG_CASH_OUT = 0x200000 ;22
+Global Const $FLAG_MISC_EDIT_REFRESH = 0x400000 ;23
+Global Const $FLAG_MISC_EXIT = 0x800000 ;24
+Global Const $FLAG_MISC_OPEN = 0x1000000 ;25
+Global Const $FLAG_MISC_EDIT = 0x2000000 ;26
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -106,16 +110,20 @@ Global Const $FP_MODEL_MODE_DEFAULT = 0
 Global Const $CASH_IO_MIN = 0
 Global Const $CASH_IO_MAX = 999999999.99
 Global Const $CASH_IO_DEFAULT = $CASH_IO_MIN
+Global Const $MAX_REP = 2540
+Global Const $MISC_START_REP_ADDR = 2560
+Global Const $MISC_READ_BYTE_COUNT = 128
+
 Dim $guiState[2] = [0, 0]
 Global $FactNI, $FiscNI, $VatNI
-Global $_main, $_stat, $_hf
+Global $_main, $_stat, $_hf, $_misc
 Global $readFlashB, $writeFlashB, $stopReadFlashB, $eraseFlashB, $setVerB, $cleanNsetB, $HFreadNsaveB, $HFopenNwriteB, $PortN, $PortConB, $PortSpeed
 Global $startAdrI, $endAdrI, $TaxRateAI, $TaxRateBI, $TaxRateVI, $TaxRateGI, $bdI, $allBytesI, $percI, $EldI, $LeftI, $curBPSI
 Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVChB, $TaxRateGChB, $FiscRefreshB, $FiscalizeB, $SetTaxRatesB
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI
+Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -134,6 +142,7 @@ Global $statusBytes
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
 Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T', 'Ekselio']
+Dim $RepMas[$MAX_REP]
 #endregion ConstsVars
 _GUIprepair()
 _StartMainLoop()
@@ -331,6 +340,8 @@ Func _checkGUImsg()
 				$retVal = _CashIn()
 			Case $m = $CashOutB
 				$retVal = _CashOut()
+			Case $m = $MiscB
+				_MiscEdit()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -341,8 +352,6 @@ Func _checkGUImsg()
 		Select
 			Case $m = $GUI_EVENT_CLOSE
 				_FlagOn($FLAG_HF_EXIT)
-		EndSelect
-		Select
 			Case $m = $HFopenB
 				$res = _HFopen($h)
 				If $res Then
@@ -365,6 +374,21 @@ Func _checkGUImsg()
 				EndIf
 			Case $m = $HFPrintDiagB
 				_PrintDiag()
+		EndSelect
+	ElseIf $h = $_misc Then
+		Select
+			Case $m = $GUI_EVENT_CLOSE
+				_FlagOn($FLAG_MISC_EXIT, 1)
+			Case $m = $MiscOpenB
+				$res = _MiscOpen($h)
+				If $res Then
+					_DLog('_checkGUImsg(): _MiscOpen() = ' & $res & @CRLF)
+				EndIf
+			Case $m = $MiscSaveB
+				$res = _MiscSave($h)
+				If $res Then
+					_DLog('_checkGUImsg(): _MiscSave() = ' & $res & @CRLF)
+				EndIf
 		EndSelect
 	EndIf
 	;Return $guiState
@@ -1058,6 +1082,14 @@ EndFunc   ;==>_GUIdel
 Func _GUIprepair()
 	Local $s, $s1
 	Local Const $DTM_SETFORMAT_ = 0x1032
+	#region $_misc
+	$_misc = GUICreate('Misc', 300 - 20, 230 - 30)
+	GUISwitch($_misc)
+	$MiscEditE = GUICtrlCreateEdit('', 5, 5, 290 - 20, 160 - 30, $ES_WANTRETURN + $WS_VSCROLL + $ES_AUTOVSCROLL)
+	GUICtrlSetFont(-1, 9, Default, Default, 'Courier New')
+	$MiscOpenB = GUICtrlCreateButton('Open', 70, 175 - 30, 50, 20, 0)
+	$MiscSaveB = GUICtrlCreateButton('Save', 70, 205 - 30, 50, 20, 0)
+	#endregion $_misc
 	#region $_stat
 	$_stat = GUICreate('Status', 400, 300)
 	$textE = GUICtrlCreateEdit('', 0, 0, 400, 300)
@@ -1127,6 +1159,7 @@ Func _GUIprepair()
 	$HFopenNwriteB = GUICtrlCreateButton('OpenWrite', 130, 180, 50, 20)
 	GUICtrlSetFont(-1, 7)
 	$HFeditB = GUICtrlCreateButton('Edit HF', 130, 210, 50, 20)
+	$MiscB = GUICtrlCreateButton('Misc', 130, 240, 50, 20)
 	$timeDT = GUICtrlCreateDate('', 190, 150, 110, 20, $DTS_UPDOWN)
 	$timeSetB = GUICtrlCreateButton('Set', 190, 180, 50, 20)
 	$timeGetB = GUICtrlCreateButton('Get', 250, 180, 50, 20)
@@ -1198,6 +1231,10 @@ Func _GUIprepair()
 	_CtrlListAdd($PrintXB)
 	_CtrlListAdd($PrintZB)
 	_CtrlListAdd($PrintCutB)
+	_CtrlListAdd($CashInB)
+	_CtrlListAdd($CashOutB)
+	_CtrlListAdd($CashInI)
+	_CtrlListAdd($CashOutI)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1493,6 +1530,84 @@ Func _Info($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Info
+Func _MiscEdit()
+	_FlagOn($FLAG_MISC_EDIT)
+	GUISetState(@SW_DISABLE)
+	GUISwitch($_misc)
+	GUISetState(@SW_SHOW)
+	Do
+		_checkGUImsg()
+	Until _Flag($FLAG_MISC_EXIT, 1)
+	_FlagOff($FLAG_MISC_EXIT, 1)
+	GUISetState(@SW_HIDE)
+	GUISwitch($_main)
+	GUISetState(@SW_HIDE)
+	GUISetState(@SW_SHOW)
+	GUISetState(@SW_ENABLE)
+	_FlagOff($FLAG_MISC_EDIT)
+EndFunc   ;==>_MiscEdit
+Func _MiscEditRefresh()
+	Local $s, $cr
+	_FlagOn($FLAG_MISC_EDIT_REFRESH, 1)
+	$s = ''
+	$cr = @CRLF
+	For $i = 0 To $MAX_REP - 1
+		If $i = $MAX_REP - 1 Then $cr = ''
+		$s &= $RepMas[$i] & $cr
+	Next
+	_FlagOff($FLAG_MISC_EDIT_REFRESH, 1)
+	GUICtrlSetData($MiscEditE, $s)
+	Return $s
+EndFunc   ;==>_MiscEditRefresh
+Func _MiscOpen($mainHndl)
+	Local $errStatus, $retVal, $k, $ss, $snum
+	GUISetState(@SW_DISABLE, $mainHndl)
+	Local $filename = FileOpenDialog('Open bin as', '', 'Binary (*.bin)|All (*.*)')
+	$errStatus = @error
+	GUISetState(@SW_ENABLE, $mainHndl)
+	GUISetState(@SW_HIDE, $mainHndl)
+	GUISetState(@SW_SHOW, $mainHndl)
+	If $errStatus Then
+		_DLog('_MiscOpen(): file not selected' & @CRLF)
+		Return 1
+	EndIf
+	If StringRight($filename, 4) <> '.bin' Then
+		$filename &= '.bin'
+	EndIf
+	_DLog('_MiscOpen(): $filename = ' & $filename & @CRLF)
+	Local $file = FileOpen($filename)
+	If $file = -1 Then
+		_DLog('_MiscOpen(): FileOpen() error' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_MISC_OPEN, 1)
+	$retVal = 0
+	$k = 0
+	Dim $RepM[$MAX_REP]
+	For $i = 0 To $MAX_REP - 1
+		$RepM[$i] = ''
+	Next
+	Do
+		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
+		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
+		If @error = -1 Then ExitLoop
+		$RepM[$k] = $ss
+		$k += 1
+		If $k >= $MAX_REP Then
+			_DLog('_MiscOpen(): Max reached' & @CRLF)
+			ExitLoop
+		EndIf
+	Until 0
+	FileClose($file)
+	If $retVal = 0 Then
+		$RepMas = $RepM
+		_MiscEditRefresh()
+	EndIf
+	_FlagOff($FLAG_MISC_OPEN, 1)
+	Return $retVal
+EndFunc   ;==>_MiscOpen
+Func _MiscSave($mainHndl)
+EndFunc   ;==>_MiscSave
 Func _PCtimeGet()
 	Local $data
 	_FlagOn($FLAG_TIME_GET_PC)
