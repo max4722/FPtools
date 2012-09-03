@@ -68,6 +68,8 @@ Global Const $FLAG_IND_SHOW_TIME = 0x10000 ;17
 Global Const $FLAG_FP_MODEL_MODE_SET = 0x20000 ;18
 Global Const $FLAG_FP_MODEL_STRING_GET_FULL = 0x40000 ;19
 Global Const $FLAG_FP_MODEL_STRING_GET = 0x80000 ;20
+Global Const $FLAG_CASH_IN = 0x100000 ;21
+Global Const $FLAG_CASH_OUT = 0x200000 ;22
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -101,6 +103,9 @@ Global Const $DelayPCtimeGet = 500
 Global Const $FP_MODEL_MODE_MIN = 0
 Global Const $FP_MODEL_MODE_MAX = 1
 Global Const $FP_MODEL_MODE_DEFAULT = 0
+Global Const $CASH_IO_MIN = 0
+Global Const $CASH_IO_MAX = 999999999.99
+Global Const $CASH_IO_DEFAULT = $CASH_IO_MIN
 Dim $guiState[2] = [0, 0]
 Global $FactNI, $FiscNI, $VatNI
 Global $_main, $_stat, $_hf
@@ -110,7 +115,7 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB, $PrintCutB, $FPmodel
+Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -124,11 +129,11 @@ Global $seq = 0
 Global $SLmax = 0, $CLmax = 0
 Global $PRnumS = $PR_NUM_S_DEFAULT
 Global $PRnumF = $PR_NUM_F_DEFAULT
-Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmodelMode
+Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmodelMode, $CashIn, $CashOut
 Global $statusBytes
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
-Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T','Ekselio']
+Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T', 'Ekselio']
 #endregion ConstsVars
 _GUIprepair()
 _StartMainLoop()
@@ -150,6 +155,54 @@ Func _AllCtrlEnable()
 	Next
 	_FlagOff($FLAG_ALLCTRL_ENABLE, 1)
 EndFunc   ;==>_AllCtrlEnable
+Func _CashIn()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_CashIn(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_CASH_IN, 1)
+	$retVal = 0
+	$dd = $CashIn
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(70, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_CashIn(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_CASH_IN, 1)
+	Return $retVal
+EndFunc   ;==>_CashIn
+Func _CashOut()
+	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
+	If _TestConnect() = '' Then
+		_DLog('_CashOut(): No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_CASH_OUT, 1)
+	$retVal = 0
+	$dd = -$CashOut
+	Do
+		$seq = _incSeq($seq)
+		$res = _SendCMD(70, $dd, $seq)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('_CashOut(): No response while reading data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_CASH_OUT, 1)
+	Return $retVal
+EndFunc   ;==>_CashOut
 Func _checkGUImsg()
 	Local $msg, $m, $h, $retVal, $res
 	$msg = GUIGetMsg(1)
@@ -274,6 +327,10 @@ Func _checkGUImsg()
 				$retVal = _PrintZ()
 			Case $m = $PrintCutB
 				$retVal = _PrintCut()
+			Case $m = $CashInB
+				$retVal = _CashIn()
+			Case $m = $CashOutB
+				$retVal = _CashOut()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -379,6 +436,20 @@ Func _CheckRange()
 		_DLog('$PRnumF < $PRnumS, $PRnumF setting to $PRnumS' & @CRLF)
 		$PRnumF = $PRnumS
 		GUICtrlSetData($periodfI, $PRnumF)
+	EndIf
+	$CashIn = GUICtrlRead($CashInI)
+	$i = _CheckInput($CashIn, $CASH_IO_MIN, $CASH_IO_MAX, $CASH_IO_DEFAULT)
+	If $i <> $CashIn Then
+		_DLog('Not correct $CashIn, setting to default value' & @CRLF)
+		$CashIn = $i
+		GUICtrlSetData($CashInI, $CashIn)
+	EndIf
+	$CashOut = GUICtrlRead($CashOutI)
+	$i = _CheckInput($CashOut, $CASH_IO_MIN, $CASH_IO_MAX, $CASH_IO_DEFAULT)
+	If $i <> $CashOut Then
+		_DLog('Not correct $CashOut, setting to default value' & @CRLF)
+		$CashOut = $i
+		GUICtrlSetData($CashOutI, $CashOut)
 	EndIf
 EndFunc   ;==>_CheckRange
 Func _CleanNSet($mainHndl)
@@ -676,6 +747,31 @@ Func _FlashReadNsave()
 	_FlagOff($FLAG_READ_FLASH)
 	Return $retVal
 EndFunc   ;==>_FlashReadNsave
+Func _FPmodelModeGet()
+	Return $FPmodelMode
+EndFunc   ;==>_FPmodelModeGet
+Func _FPmodelModeSet($m)
+	_FlagOn($FLAG_FP_MODEL_MODE_SET, 1)
+	$FPmodelMode = _CheckInput($m, $FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
+	_FlagOff($FLAG_FP_MODEL_MODE_SET, 1)
+EndFunc   ;==>_FPmodelModeSet
+Func _FPmodelStringGetFull()
+	_FlagOn($FLAG_FP_MODEL_STRING_GET_FULL, 1)
+	Local $i, $str
+	$str = ''
+	For $i = $FP_MODEL_MODE_MIN To $FP_MODEL_MODE_MAX
+		$str = $str & $FPModelStrM[$i] & '|'
+	Next
+	_FlagOff($FLAG_FP_MODEL_STRING_GET_FULL, 1)
+	Return StringTrimRight($str, 1)
+EndFunc   ;==>_FPmodelStringGetFull
+Func _FPmodelStringGet($m)
+	_FlagOn($FLAG_FP_MODEL_STRING_GET, 1)
+	Local $i
+	$i = _CheckInput($m, $FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
+	_FlagOff($FLAG_FP_MODEL_STRING_GET, 1)
+	Return $FPModelStrM[$i]
+EndFunc   ;==>_FPmodelStringGet
 Func _FPtimeGet()
 	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -978,7 +1074,7 @@ Func _GUIprepair()
 	$HFPrintDiagB = GUICtrlCreateButton('Diag', 130, 175 - 30, 50, 20, 0)
 	#endregion $_hf
 	#region $_main
-	$_main = GUICreate('FPtools', 367, 361)
+	$_main = GUICreate('FPtools', 367, 421)
 	GUISwitch($_main)
 	#region GUICtrlCreate
 	$FactNL = GUICtrlCreateLabel('Factory number:', 10, 5, 80, 20)
@@ -1024,7 +1120,7 @@ Func _GUIprepair()
 	$eraseFlashB = GUICtrlCreateButton('Erase', 70, 180, 50, 20)
 	$getStatusB = GUICtrlCreateButton('Status', 10, 210, 50, 20)
 	$setVerB = GUICtrlCreateButton('Set ver', 70, 210, 50, 20)
-	$cleanNsetB = GUICtrlCreateButton('Clean+Set', 70, 240, 50, 20)
+	$cleanNsetB = GUICtrlCreateButton('Clean+Set', 70, 300, 50, 20)
 	GUICtrlSetFont(-1, 7)
 	$HFreadNsaveB = GUICtrlCreateButton('ReadSave', 130, 150, 50, 20)
 	GUICtrlSetFont(-1, 7)
@@ -1043,15 +1139,19 @@ Func _GUIprepair()
 	$periodFormNumCB = GUICtrlCreateRadio('num', 250, 260, 50, 20)
 	$PRmakeB = GUICtrlCreateButton('PR', 310, 210, 50, 20)
 	$PRsingleChB = GUICtrlCreateCheckbox('Single', 310, 240, 50, 20)
-	$PortN = GUICtrlCreateCombo('', 10, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	$PortSpeed = GUICtrlCreateCombo('', 90, 330, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
-	$PortConB = GUICtrlCreateButton('Connect', 170, 330, 60, 20)
-	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 330, 60, 20)
+	$PortN = GUICtrlCreateCombo('', 10, 390, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$PortSpeed = GUICtrlCreateCombo('', 90, 390, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$PortConB = GUICtrlCreateButton('Connect', 170, 390, 60, 20)
+	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 390, 60, 20)
 	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
 	$PrintCutB = GUICtrlCreateButton('Cut', 310, 300, 50, 20)
-	$PrintXB = GUICtrlCreateButton('X', 10, 240, 50, 20)
-	$PrintZB = GUICtrlCreateButton('Z', 10, 270, 50, 20)
-	$FPmodel = GUICtrlCreateCombo('', 10, 300, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	$CashInB = GUICtrlCreateButton('+Cash', 10, 240, 30, 20)
+	$CashInI = GUICtrlCreateInput('', 50, 240, 70, 20)
+	$CashOutB = GUICtrlCreateButton('-Cash', 10, 270, 30, 20)
+	$CashOutI = GUICtrlCreateInput('', 50, 270, 70, 20)
+	$PrintXB = GUICtrlCreateButton('X', 10, 300, 50, 20)
+	$PrintZB = GUICtrlCreateButton('Z', 10, 330, 50, 20)
+	$FPmodel = GUICtrlCreateCombo('', 10, 360, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	#endregion GUICtrlCreate
 	#region _CtrlListAdd
 	_CtrlListAdd($SetFactNB)
@@ -1889,28 +1989,3 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
-Func _FPmodelModeGet()
-	Return $FPmodelMode
-EndFunc
-Func _FPmodelModeSet($m)
-	_FlagOn($FLAG_FP_MODEL_MODE_SET, 1)
-	$FPmodelMode = _CheckInput($m,$FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
-	_FlagOff($FLAG_FP_MODEL_MODE_SET, 1)
-EndFunc
-Func _FPmodelStringGetFull()
-	_FlagOn($FLAG_FP_MODEL_STRING_GET_FULL, 1)
-	Local $i, $str
-	$str = ''
-	For $i = $FP_MODEL_MODE_MIN To $FP_MODEL_MODE_MAX
-		$str = $str & $FPModelStrM[$i] & '|'
-	Next
-	_FlagOff($FLAG_FP_MODEL_STRING_GET_FULL, 1)
-	Return StringTrimRight($str, 1)
-EndFunc
-Func _FPmodelStringGet($m)
-	_FlagOn($FLAG_FP_MODEL_STRING_GET, 1)
-	Local $i
-	$i = _CheckInput($m, $FP_MODEL_MODE_MIN, $FP_MODEL_MODE_MAX, $FP_MODEL_MODE_DEFAULT)
-	_FlagOff($FLAG_FP_MODEL_STRING_GET, 1)
-	Return $FPModelStrM[$i]
-EndFunc
