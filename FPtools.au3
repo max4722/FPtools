@@ -74,6 +74,9 @@ Global Const $FLAG_MISC_EDIT_REFRESH = 0x400000 ;23
 Global Const $FLAG_MISC_EXIT = 0x800000 ;24
 Global Const $FLAG_MISC_OPEN = 0x1000000 ;25
 Global Const $FLAG_MISC_EDIT = 0x2000000 ;26
+Global Const $FLAG_EXIT_MISC_OPEN = 0x4000000 ;27
+
+Global Const $REP_NUM = 1
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -1552,15 +1555,24 @@ Func _MiscEditRefresh()
 	$s = ''
 	$cr = @CRLF
 	For $i = 0 To $MAX_REP - 1
-		If $i = $MAX_REP - 1 Then $cr = ''
+		If $i = $MAX_REP - 1 Or $RepMas[$i] = '' Then $cr = ''
+		If $RepMas[$i] = '' Then ExitLoop
 		$s &= $RepMas[$i] & $cr
 	Next
 	_FlagOff($FLAG_MISC_EDIT_REFRESH, 1)
 	GUICtrlSetData($MiscEditE, $s)
 	Return $s
 EndFunc   ;==>_MiscEditRefresh
+Func _MiscGet($s, $adr)
+	Local $retVal
+	Select
+		Case $adr = $REP_NUM
+			$retVal = Dec(StringMid($s, 3, 2)) + 256 * Dec(StringLeft($s, 2)) + 1
+	EndSelect
+	Return $retVal
+EndFunc   ;==>_MiscGet
 Func _MiscOpen($mainHndl)
-	Local $errStatus, $retVal, $k, $ss, $snum
+	Local $errStatus, $retVal, $k, $ss, $snum, $sf
 	GUISetState(@SW_DISABLE, $mainHndl)
 	Local $filename = FileOpenDialog('Open bin as', '', 'Binary (*.bin)|All (*.*)')
 	$errStatus = @error
@@ -1588,10 +1600,21 @@ Func _MiscOpen($mainHndl)
 		$RepM[$i] = ''
 	Next
 	Do
+		_checkGUImsg()
+		If _Flag($FLAG_EXIT_MISC_OPEN, 1) Then
+			_FlagOff($FLAG_EXIT_MISC_OPEN, 1)
+			_DLog('_MiscOpen(): Reading aborted' & @CRLF)
+			ExitLoop
+		EndIf
 		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
-		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
 		If @error = -1 Then ExitLoop
-		$RepM[$k] = $ss
+		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
+		$sf = _MiscGet($ss, $REP_NUM)
+		If $sf < 0 Or $sf > $MAX_REP Then
+			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
+			ExitLoop
+		EndIf
+		$RepM[$k] = $sf
 		$k += 1
 		If $k >= $MAX_REP Then
 			_DLog('_MiscOpen(): Max reached' & @CRLF)
