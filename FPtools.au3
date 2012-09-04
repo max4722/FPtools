@@ -77,6 +77,7 @@ Global Const $FLAG_MISC_EDIT = 0x2000000 ;26
 Global Const $FLAG_EXIT_MISC_OPEN = 0x4000000 ;27
 
 Global Const $REP_NUM = 1
+Global Const $REP_DATE = 2
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -1564,10 +1565,23 @@ Func _MiscEditRefresh()
 	Return $s
 EndFunc   ;==>_MiscEditRefresh
 Func _MiscGet($s, $adr)
-	Local $retVal
+	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[4]
 	Select
 		Case $adr = $REP_NUM
-			$retVal = Dec(StringMid($s, 3, 2)) + 256 * Dec(StringLeft($s, 2)) + 1
+			$retVal = StringFormat('%05d', Dec(StringMid($s, 3, 2)) + 256 * Dec(StringLeft($s, 2)) + 1)
+		Case $adr = $REP_DATE
+			$DTstr = StringMid($s, 5, 8)
+			$DTm[0] = Dec(StringMid($DTstr, 1, 2))
+			$DTm[1] = Dec(StringMid($DTstr, 3, 2))
+			$DTm[2] = Dec(StringMid($DTstr, 5, 2))
+			$DTm[3] = Dec(StringMid($DTstr, 7, 2))
+			$yeari = BitShift(BitAND($DTm[0], 126), 1)
+			$moni = BitShift(BitAND($DTm[0], 1), -3) + BitShift(BitAND($DTm[1], 224), 5)
+			$dayi = BitAND($DTm[1], 31)
+			$houri = BitShift(BitAND($DTm[2], 248), 3)
+			$mini = BitShift(BitAND($DTm[2], 7), -3) + BitShift(BitAND($DTm[3], 224), 5)
+			$seci = BitAND($DTm[3], 31) + BitShift(BitAND($DTm[0], 128), 7)
+			$retVal = StringFormat('%02d-%02d-%02d %02d:%02d:%02d', $dayi, $moni, $yeari, $houri, $mini, $seci)
 	EndSelect
 	Return $retVal
 EndFunc   ;==>_MiscGet
@@ -1609,7 +1623,7 @@ Func _MiscOpen($mainHndl)
 		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
 		If @error = -1 Then ExitLoop
 		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
-		$sf = _MiscGet($ss, $REP_NUM)
+		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE)
 		If $sf < 0 Or $sf > $MAX_REP Then
 			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
 			ExitLoop
