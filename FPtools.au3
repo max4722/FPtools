@@ -78,6 +78,30 @@ Global Const $FLAG_EXIT_MISC_OPEN = 0x4000000 ;27
 
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
+Global Const $REP_ZERO = 3
+Global Const $REP_N_CHECKS = 4
+Global Const $REP_N_SELLS = 5
+Global Const $REP_N_RETURNS = 6
+Global Const $REP_A = 7
+Global Const $REP_B = 8
+Global Const $REP_V = 9
+Global Const $REP_G = 10
+Global Const $REP_D = 11
+Global Const $REP_A_R = 12
+Global Const $REP_B_R = 13
+Global Const $REP_V_R = 14
+Global Const $REP_G_R = 15
+Global Const $REP_D_R = 16
+Global Const $REP_A_TAX = 17
+Global Const $REP_B_TAX = 18
+Global Const $REP_V_TAX = 19
+Global Const $REP_G_TAX = 20
+Global Const $REP_A_R_TAX = 21
+Global Const $REP_B_R_TAX = 22
+Global Const $REP_V_R_TAX = 23
+Global Const $REP_G_R_TAX = 24
+Global Const $REP_FOOTER = 25
+Global Const $REP_CHECKSUM = 26
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -1087,12 +1111,12 @@ Func _GUIprepair()
 	Local $s, $s1
 	Local Const $DTM_SETFORMAT_ = 0x1032
 	#region $_misc
-	$_misc = GUICreate('Misc', 300 - 20, 230 - 30)
+	$_misc = GUICreate('Misc', 300 + 600, 230 + 400)
 	GUISwitch($_misc)
-	$MiscEditE = GUICtrlCreateEdit('', 5, 5, 290 - 20, 160 - 30, $ES_WANTRETURN + $WS_VSCROLL + $ES_AUTOVSCROLL)
+	$MiscEditE = GUICtrlCreateEdit('', 5, 5, 290 + 600, 160 + 400, $ES_WANTRETURN + $WS_VSCROLL + $ES_AUTOVSCROLL + $WS_HSCROLL)
 	GUICtrlSetFont(-1, 9, Default, Default, 'Courier New')
-	$MiscOpenB = GUICtrlCreateButton('Open', 70, 175 - 30, 50, 20, 0)
-	$MiscSaveB = GUICtrlCreateButton('Save', 70, 205 - 30, 50, 20, 0)
+	$MiscOpenB = GUICtrlCreateButton('Open', 70, 175 + 400, 50, 20, 0)
+	$MiscSaveB = GUICtrlCreateButton('Save', 70, 205 + 400, 50, 20, 0)
 	#endregion $_misc
 	#region $_stat
 	$_stat = GUICreate('Status', 400, 300)
@@ -1565,10 +1589,10 @@ Func _MiscEditRefresh()
 	Return $s
 EndFunc   ;==>_MiscEditRefresh
 Func _MiscGet($s, $adr)
-	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[4]
+	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[6]
 	Select
 		Case $adr = $REP_NUM
-			$retVal = StringFormat('%05d', Dec(StringMid($s, 3, 2)) + 256 * Dec(StringLeft($s, 2)) + 1)
+			$retVal = Dec(StringMid($s, 1, 4)) + 1
 		Case $adr = $REP_DATE
 			$DTstr = StringMid($s, 5, 8)
 			$DTm[0] = Dec(StringMid($DTstr, 1, 2))
@@ -1580,8 +1604,56 @@ Func _MiscGet($s, $adr)
 			$dayi = BitAND($DTm[1], 31)
 			$houri = BitShift(BitAND($DTm[2], 248), 3)
 			$mini = BitShift(BitAND($DTm[2], 7), -3) + BitShift(BitAND($DTm[3], 224), 5)
-			$seci = BitAND($DTm[3], 31) + BitShift(BitAND($DTm[0], 128), 7)
+			$seci = BitShift(BitAND($DTm[3], 31), -1) + BitShift(BitAND($DTm[0], 128), 7)
 			$retVal = StringFormat('%02d-%02d-%02d %02d:%02d:%02d', $dayi, $moni, $yeari, $houri, $mini, $seci)
+		Case $adr = $REP_ZERO
+			$retVal = Dec(StringMid($s, 13, 2))
+		Case $adr = $REP_N_CHECKS
+			$retVal = Dec(StringMid($s, 15, 6))
+		Case $adr = $REP_N_SELLS
+			$retVal = Dec(StringMid($s, 21, 4))
+		Case $adr = $REP_N_RETURNS
+			$retVal = Dec(StringMid($s, 25, 4))
+		Case $adr = $REP_A
+			$retVal = Dec(StringMid($s, 29, 12))/100
+		Case $adr = $REP_B
+			$retVal = Dec(StringMid($s, 41, 12))/100
+		Case $adr = $REP_V
+			$retVal = Dec(StringMid($s, 53, 12))/100
+		Case $adr = $REP_G
+			$retVal = Dec(StringMid($s, 65, 12))/100
+		Case $adr = $REP_D
+			$retVal = Dec(StringMid($s, 77, 12))/100
+		Case $adr = $REP_A_R
+			$retVal = Dec(StringMid($s, 89, 12))/100
+		Case $adr = $REP_B_R
+			$retVal = Dec(StringMid($s, 101, 12))/100
+		Case $adr = $REP_V_R
+			$retVal = Dec(StringMid($s, 113, 12))/100
+		Case $adr = $REP_G_R
+			$retVal = Dec(StringMid($s, 125, 12))/100
+		Case $adr = $REP_D_R
+			$retVal = Dec(StringMid($s, 137, 12))/100
+		Case $adr = $REP_A_TAX
+			$retVal = Dec(StringMid($s, 149, 12))/100
+		Case $adr = $REP_B_TAX
+			$retVal = Dec(StringMid($s, 161, 12))/100
+		Case $adr = $REP_V_TAX
+			$retVal = Dec(StringMid($s, 173, 12))/100
+		Case $adr = $REP_G_TAX
+			$retVal = Dec(StringMid($s, 185, 12))/100
+		Case $adr = $REP_A_R_TAX
+			$retVal = Dec(StringMid($s, 197, 12))/100
+		Case $adr = $REP_B_R_TAX
+			$retVal = Dec(StringMid($s, 209, 12))/100
+		Case $adr = $REP_V_R_TAX
+			$retVal = Dec(StringMid($s, 221, 12))/100
+		Case $adr = $REP_G_R_TAX
+			$retVal = Dec(StringMid($s, 233, 12))/100
+		Case $adr = $REP_FOOTER
+			$retVal = StringMid($s, 245, 10)
+		Case $adr = $REP_CHECKSUM
+			$retVal = StringMid($s, 255, 2)
 	EndSelect
 	Return $retVal
 EndFunc   ;==>_MiscGet
@@ -1614,16 +1686,22 @@ Func _MiscOpen($mainHndl)
 		$RepM[$i] = ''
 	Next
 	Do
-		_checkGUImsg()
-		If _Flag($FLAG_EXIT_MISC_OPEN, 1) Then
-			_FlagOff($FLAG_EXIT_MISC_OPEN, 1)
-			_DLog('_MiscOpen(): Reading aborted' & @CRLF)
-			ExitLoop
-		EndIf
+;~ 		_checkGUImsg()
+;~ 		If _Flag($FLAG_EXIT_MISC_OPEN, 1) Then
+;~ 			_FlagOff($FLAG_EXIT_MISC_OPEN, 1)
+;~ 			_DLog('_MiscOpen(): Reading aborted' & @CRLF)
+;~ 			ExitLoop
+;~ 		EndIf
 		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
 		If @error = -1 Then ExitLoop
 		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
-		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE)
+		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE) & ',' & _MiscGet($ss, $REP_ZERO) & ',' & _MiscGet($ss, $REP_N_CHECKS) & ',' _
+			& _MiscGet($ss, $REP_N_SELLS) & ',' & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' _
+			& _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' _
+			& _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' _
+			& _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' _
+			& _MiscGet($ss, $REP_G_TAX) & ',' & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' _
+			& _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' & _MiscGet($ss, $REP_CHECKSUM)
 		If $sf < 0 Or $sf > $MAX_REP Then
 			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
 			ExitLoop
