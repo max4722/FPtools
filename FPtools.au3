@@ -153,7 +153,8 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB, $timeAutoUpdateModeChB
+Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
+Global $timeAutoUpdateModeChB, $MiscStopB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -419,15 +420,22 @@ Func _checkGUImsg()
 			Case $m = $GUI_EVENT_CLOSE
 				_FlagOn($FLAG_MISC_EXIT, 1)
 			Case $m = $MiscOpenB
+				_AllCtrlDisable()
+				GUICtrlSetState($MiscStopB, $GUI_ENABLE)
 				$res = _MiscOpen($h)
 				If $res Then
 					_DLog('_checkGUImsg(): _MiscOpen() = ' & $res & @CRLF)
 				EndIf
+				_AllCtrlEnable()
+				GUICtrlSetState($MiscStopB, $GUI_DISABLE)
 			Case $m = $MiscSaveB
 				$res = _MiscSave($h)
 				If $res Then
 					_DLog('_checkGUImsg(): _MiscSave() = ' & $res & @CRLF)
 				EndIf
+			Case $m = $MiscStopB
+				_FlagOn($FLAG_EXIT_MISC_OPEN, 1)
+				GUICtrlSetState($MiscStopB, $GUI_DISABLE)
 		EndSelect
 	EndIf
 	;Return $guiState
@@ -1121,13 +1129,21 @@ EndFunc   ;==>_GUIdel
 Func _GUIprepair()
 	Local $s, $s1
 	Local Const $DTM_SETFORMAT_ = 0x1032
+	Local Const $OFFSET_X = 600
+	Local Const $OFFSET_Y = 400
 	#region $_misc
-	$_misc = GUICreate('Misc', 300 + 600, 230 + 400)
+	$_misc = GUICreate('Misc', 300 + $OFFSET_X, 230 + $OFFSET_Y)
 	GUISwitch($_misc)
-	$MiscEditE = GUICtrlCreateEdit('', 5, 5, 290 + 600, 160 + 400, $ES_WANTRETURN + $WS_VSCROLL + $ES_AUTOVSCROLL + $WS_HSCROLL)
+	#region GUICtrlCreate
+	$MiscEditE = GUICtrlCreateEdit('', 5, 5, 290 + $OFFSET_X, 160 + $OFFSET_Y, $ES_WANTRETURN + $WS_VSCROLL + $ES_AUTOVSCROLL + $WS_HSCROLL)
 	GUICtrlSetFont(-1, 9, Default, Default, 'Courier New')
-	$MiscOpenB = GUICtrlCreateButton('Open', 70, 175 + 400, 50, 20, 0)
-	$MiscSaveB = GUICtrlCreateButton('Save', 70, 205 + 400, 50, 20, 0)
+	$MiscOpenB = GUICtrlCreateButton('Open', 5, 175 + $OFFSET_Y, 50, 20, 0)
+	$MiscSaveB = GUICtrlCreateButton('Save', 5, 205 + $OFFSET_Y, 50, 20, 0)
+	$MiscStopB = GUICtrlCreateButton('Stop', 60, 175 + $OFFSET_Y, 50, 20, 0)
+	#endregion GUICtrlCreate
+	#region GUICtrlSetState
+	GUICtrlSetState($MiscStopB, $GUI_DISABLE)
+	#endregion GUICtrlSetState
 	#endregion $_misc
 	#region $_stat
 	$_stat = GUICreate('Status', 400, 300)
@@ -1617,7 +1633,7 @@ Func _MiscGet($s, $adr)
 			$houri = BitShift(BitAND($DTm[2], 248), 3)
 			$mini = BitShift(BitAND($DTm[2], 7), -3) + BitShift(BitAND($DTm[3], 224), 5)
 			$seci = BitShift(BitAND($DTm[3], 31), -1) + BitShift(BitAND($DTm[0], 128), 7)
-			$retVal = StringFormat('%d,%d,%d,%02d:%02d:%02d', $dayi, $moni, $yeari, $houri, $mini, $seci)
+			$retVal = $dayi & ',' & $moni & ',' & $yeari & ',' & $houri & ',' & $mini & ',' & $seci
 		Case $adr = $REP_ZERO
 			$retVal = Dec(StringMid($s, 13, 2))
 		Case $adr = $REP_N_CHECKS
@@ -1627,41 +1643,41 @@ Func _MiscGet($s, $adr)
 		Case $adr = $REP_N_RETURNS
 			$retVal = Dec(StringMid($s, 25, 4))
 		Case $adr = $REP_A
-			$retVal = Dec(StringMid($s, 29, 12))/100
+			$retVal = Dec(StringMid($s, 29, 12)) / 100
 		Case $adr = $REP_B
-			$retVal = Dec(StringMid($s, 41, 12))/100
+			$retVal = Dec(StringMid($s, 41, 12)) / 100
 		Case $adr = $REP_V
-			$retVal = Dec(StringMid($s, 53, 12))/100
+			$retVal = Dec(StringMid($s, 53, 12)) / 100
 		Case $adr = $REP_G
-			$retVal = Dec(StringMid($s, 65, 12))/100
+			$retVal = Dec(StringMid($s, 65, 12)) / 100
 		Case $adr = $REP_D
-			$retVal = Dec(StringMid($s, 77, 12))/100
+			$retVal = Dec(StringMid($s, 77, 12)) / 100
 		Case $adr = $REP_A_R
-			$retVal = Dec(StringMid($s, 89, 12))/100
+			$retVal = Dec(StringMid($s, 89, 12)) / 100
 		Case $adr = $REP_B_R
-			$retVal = Dec(StringMid($s, 101, 12))/100
+			$retVal = Dec(StringMid($s, 101, 12)) / 100
 		Case $adr = $REP_V_R
-			$retVal = Dec(StringMid($s, 113, 12))/100
+			$retVal = Dec(StringMid($s, 113, 12)) / 100
 		Case $adr = $REP_G_R
-			$retVal = Dec(StringMid($s, 125, 12))/100
+			$retVal = Dec(StringMid($s, 125, 12)) / 100
 		Case $adr = $REP_D_R
-			$retVal = Dec(StringMid($s, 137, 12))/100
+			$retVal = Dec(StringMid($s, 137, 12)) / 100
 		Case $adr = $REP_A_TAX
-			$retVal = Dec(StringMid($s, 149, 12))/100
+			$retVal = Dec(StringMid($s, 149, 12)) / 100
 		Case $adr = $REP_B_TAX
-			$retVal = Dec(StringMid($s, 161, 12))/100
+			$retVal = Dec(StringMid($s, 161, 12)) / 100
 		Case $adr = $REP_V_TAX
-			$retVal = Dec(StringMid($s, 173, 12))/100
+			$retVal = Dec(StringMid($s, 173, 12)) / 100
 		Case $adr = $REP_G_TAX
-			$retVal = Dec(StringMid($s, 185, 12))/100
+			$retVal = Dec(StringMid($s, 185, 12)) / 100
 		Case $adr = $REP_A_R_TAX
-			$retVal = Dec(StringMid($s, 197, 12))/100
+			$retVal = Dec(StringMid($s, 197, 12)) / 100
 		Case $adr = $REP_B_R_TAX
-			$retVal = Dec(StringMid($s, 209, 12))/100
+			$retVal = Dec(StringMid($s, 209, 12)) / 100
 		Case $adr = $REP_V_R_TAX
-			$retVal = Dec(StringMid($s, 221, 12))/100
+			$retVal = Dec(StringMid($s, 221, 12)) / 100
 		Case $adr = $REP_G_R_TAX
-			$retVal = Dec(StringMid($s, 233, 12))/100
+			$retVal = Dec(StringMid($s, 233, 12)) / 100
 		Case $adr = $REP_FOOTER
 			$retVal = StringMid($s, 245, 10)
 		Case $adr = $REP_CHECKSUM
@@ -1698,22 +1714,22 @@ Func _MiscOpen($mainHndl)
 		$RepM[$i] = ''
 	Next
 	Do
-;~ 		_checkGUImsg()
-;~ 		If _Flag($FLAG_EXIT_MISC_OPEN, 1) Then
-;~ 			_FlagOff($FLAG_EXIT_MISC_OPEN, 1)
-;~ 			_DLog('_MiscOpen(): Reading aborted' & @CRLF)
-;~ 			ExitLoop
-;~ 		EndIf
+		_checkGUImsg()
+		If _Flag($FLAG_EXIT_MISC_OPEN, 1) Then
+			_FlagOff($FLAG_EXIT_MISC_OPEN, 1)
+			_DLog('_MiscOpen(): Reading aborted' & @CRLF)
+			ExitLoop
+		EndIf
 		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
 		If @error = -1 Then ExitLoop
 		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
 		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE) & ',' & _MiscGet($ss, $REP_ZERO) & ',' & _MiscGet($ss, $REP_N_CHECKS) & ',' _
-			& _MiscGet($ss, $REP_N_SELLS) & ',' & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' _
-			& _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' _
-			& _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' _
-			& _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' _
-			& _MiscGet($ss, $REP_G_TAX) & ',' & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' _
-			& _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' & _MiscGet($ss, $REP_CHECKSUM)
+				 & _MiscGet($ss, $REP_N_SELLS) & ',' & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' _
+				 & _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' _
+				 & _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' _
+				 & _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' _
+				 & _MiscGet($ss, $REP_G_TAX) & ',' & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' _
+				 & _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' & _MiscGet($ss, $REP_CHECKSUM)
 		If $sf < 0 Or $sf > $MAX_REP Then
 			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
 			ExitLoop
@@ -2221,6 +2237,18 @@ Func _TestConnect()
 	If StringLen($data) = 6 Then $statusBytes = $data
 	Return $data
 EndFunc   ;==>_TestConnect
+Func _TimeAutoUpdateModeGet()
+	Return _Flag($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+EndFunc   ;==>_TimeAutoUpdateModeGet
+Func _TimeAutoUpdateModeSet($m)
+	_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
+	If $m Then
+		_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+	Else
+		_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+	EndIf
+	_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
+EndFunc   ;==>_TimeAutoUpdateModeSet
 Func _Warn($s, $mainHndl)
 	Local $r, $res
 	GUISetState(@SW_DISABLE, $mainHndl)
@@ -2233,15 +2261,3 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
-Func _TimeAutoUpdateModeGet()
-	Return _Flag($FLAG_TIME_AUTO_UPDATE_MODE, 1)
-EndFunc   ;==>_PRsingleModeGet
-Func _TimeAutoUpdateModeSet($m)
-	_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
-	If $m Then
-		_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE, 1)
-	Else
-		_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE, 1)
-	EndIf
-	_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
-EndFunc   ;==>_PRsingleModeSet
