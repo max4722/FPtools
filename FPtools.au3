@@ -77,7 +77,8 @@ Global Const $FLAG_MISC_EDIT = 0x2000000 ;26
 Global Const $FLAG_EXIT_MISC_OPEN = 0x4000000 ;27
 Global Const $FLAG_TIME_AUTO_UPDATE_MODE = 0x8000000 ;28
 Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = 0x10000000 ;29
-
+Global Const $FLAG_MISC_EDIT_STORE = 0x20000000 ;30
+Global Const $FLAG_MISC_SAVE = 0x40000000 ;31
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
 Global Const $REP_ZERO = 3
@@ -1616,6 +1617,22 @@ Func _MiscEditRefresh()
 	GUICtrlSetData($MiscEditE, $s)
 	Return $s
 EndFunc   ;==>_MiscEditRefresh
+Func _MiscEditStore()
+	Local $res, $s
+	_FlagOn($FLAG_MISC_EDIT_STORE, 1)
+	$res = GUICtrlRead($MiscEditE)
+	$s = StringSplit($res, @CRLF, 1)
+	;_ArrayDisplay($s)
+	For $i = 0 To $MAX_REP - 1
+		If Int($s[0]) > $i Then
+			$RepMas[$i] = $s[$i + 1]
+		Else
+			$RepMas[$i] = ''
+		EndIf
+	Next
+	_FlagOff($FLAG_MISC_EDIT_STORE, 1)
+	Return $s
+EndFunc   ;==>_MiscEditStore
 Func _MiscGet($s, $adr)
 	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[6]
 	Select
@@ -1750,6 +1767,44 @@ Func _MiscOpen($mainHndl)
 	Return $retVal
 EndFunc   ;==>_MiscOpen
 Func _MiscSave($mainHndl)
+	Local $errStatus, $retVal, $res, $filename
+	GUISetState(@SW_DISABLE, $mainHndl)
+	$filename = FileSaveDialog('Save data as', '', 'Coma-separated text (*.txt)|All (*.*)', 16, StringRight($FactN, 7))
+	$errStatus = @error
+	GUISetState(@SW_ENABLE, $mainHndl)
+	GUISetState(@SW_HIDE, $mainHndl)
+	GUISetState(@SW_SHOW, $mainHndl)
+	If $errStatus Then
+		_DLog('_MiscSave(): file not selected' & @CRLF)
+		Return 1
+	EndIf
+	If StringRight($filename, 4) <> '.txt' Then
+		$filename &= '.txt'
+	EndIf
+	_DLog('_MiscSave(): $filename = ' & $filename & @CRLF)
+	Local $file = FileOpen($filename, 2)
+	If $file = -1 Then
+		_DLog('_MiscSave(): FileOpen()' & @CRLF)
+		Return 1
+	EndIf
+	_FlagOn($FLAG_MISC_SAVE, 1)
+	_MiscEditStore()
+	$retVal = 0
+	For $k = 0 To $MAX_REP - 1
+		$res = FileWriteLine($file, $RepMas[$k])
+		If $RepMas[$k] = '' Then
+			_DLog('_MiscSave(): ended' & @CRLF)
+			ExitLoop
+		EndIf
+		If $res = 0 Then
+			$retVal = 2
+			_DLog('_MiscSave(): FileWriteLine()' & @CRLF)
+			ExitLoop
+		EndIf
+	Next
+	FileClose($file)
+	_FlagOff($FLAG_MISC_SAVE, 1)
+	Return $retVal
 EndFunc   ;==>_MiscSave
 Func _PCtimeGet()
 	Local $data
