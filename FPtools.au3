@@ -75,6 +75,8 @@ Global Const $FLAG_MISC_EXIT = 0x800000 ;24
 Global Const $FLAG_MISC_OPEN = 0x1000000 ;25
 Global Const $FLAG_MISC_EDIT = 0x2000000 ;26
 Global Const $FLAG_EXIT_MISC_OPEN = 0x4000000 ;27
+Global Const $FLAG_TIME_AUTO_UPDATE_MODE = 0x8000000 ;28
+Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = 0x10000000 ;29
 
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
@@ -151,7 +153,7 @@ Global $SetFactNB, $SetVatNB, $SetFiscNB, $TaxRateAChB, $TaxRateBChB, $TaxRateVC
 Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE, $HFeditB, $HFopenB, $HFsaveB, $HFreadB, $HFwriteB
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
-Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
+Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB, $timeAutoUpdateModeChB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -166,6 +168,7 @@ Global $SLmax = 0, $CLmax = 0
 Global $PRnumS = $PR_NUM_S_DEFAULT
 Global $PRnumF = $PR_NUM_F_DEFAULT
 Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmodelMode, $CashIn, $CashOut
+Global $timeAutoUpdateMode = 0
 Global $statusBytes
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
@@ -370,6 +373,14 @@ Func _checkGUImsg()
 				$retVal = _CashOut()
 			Case $m = $MiscB
 				_MiscEdit()
+			Case $m = $timeAutoUpdateModeChB
+				_DLog('_checkGUImsg(): _TimeAutoUpdateModeGet() = ' & _TimeAutoUpdateModeGet() & @CRLF)
+				If _TimeAutoUpdateModeGet() = 0 And GUICtrlRead($m) = $GUI_CHECKED Then
+					_TimeAutoUpdateModeSet(1)
+					_DLog('_checkGUImsg(): _TimeAutoUpdateModeGet() = ' & _TimeAutoUpdateModeGet() & @CRLF)
+				ElseIf _TimeAutoUpdateModeGet() And GUICtrlRead($m) = $GUI_UNCHECKED Then
+					_TimeAutoUpdateModeSet(0)
+				EndIf
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -1192,6 +1203,7 @@ Func _GUIprepair()
 	$timeSetB = GUICtrlCreateButton('Set', 190, 180, 50, 20)
 	$timeGetB = GUICtrlCreateButton('Get', 250, 180, 50, 20)
 	$timePCgetB = GUICtrlCreateButton('<<', 310, 150, 20, 20)
+	$timeAutoUpdateModeChB = GUICtrlCreateCheckbox('timeAU', 310, 180, 55, 20)
 	$periodsDT = GUICtrlCreateDate('', 190, 210, 110, 20, $DTS_UPDOWN)
 	$periodfDT = GUICtrlCreateDate('', 190, 240, 110, 20, $DTS_UPDOWN)
 	$periodsI = GUICtrlCreateInput('', 190, 210, 110, 20)
@@ -1605,7 +1617,7 @@ Func _MiscGet($s, $adr)
 			$houri = BitShift(BitAND($DTm[2], 248), 3)
 			$mini = BitShift(BitAND($DTm[2], 7), -3) + BitShift(BitAND($DTm[3], 224), 5)
 			$seci = BitShift(BitAND($DTm[3], 31), -1) + BitShift(BitAND($DTm[0], 128), 7)
-			$retVal = StringFormat('%02d-%02d-%02d %02d:%02d:%02d', $dayi, $moni, $yeari, $houri, $mini, $seci)
+			$retVal = StringFormat('%d,%d,%d,%02d:%02d:%02d', $dayi, $moni, $yeari, $houri, $mini, $seci)
 		Case $adr = $REP_ZERO
 			$retVal = Dec(StringMid($s, 13, 2))
 		Case $adr = $REP_N_CHECKS
@@ -2189,10 +2201,12 @@ Func _StartMainLoop()
 		EndIf
 		If $TimeDivPCtimeGet <> $oldTimePCtimeGet Then
 			$oldTimePCtimeGet = $TimeDivPCtimeGet
-			If Not $portState Then
-				_PCtimeGet()
-			Else
-				_IndShowTime()
+			If _TimeAutoUpdateModeGet() Then
+				If Not $portState Then
+					_PCtimeGet()
+				Else
+					_IndShowTime()
+				EndIf
 			EndIf
 		EndIf
 	WEnd
@@ -2219,3 +2233,15 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
+Func _TimeAutoUpdateModeGet()
+	Return _Flag($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+EndFunc   ;==>_PRsingleModeGet
+Func _TimeAutoUpdateModeSet($m)
+	_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
+	If $m Then
+		_FlagOn($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+	Else
+		_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE, 1)
+	EndIf
+	_FlagOff($FLAG_TIME_AUTO_UPDATE_MODE_FUNC, 1)
+EndFunc   ;==>_PRsingleModeSet
