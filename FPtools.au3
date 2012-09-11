@@ -105,6 +105,7 @@ Global Const $REP_V_R_TAX = 23
 Global Const $REP_G_R_TAX = 24
 Global Const $REP_FOOTER = 25
 Global Const $REP_CHECKSUM = 26
+Global Const $REP_CHECKSUM_CALC = 27
 
 Global Const $FLASH_ADR_Z = Dec('00A00')
 Global Const $CONNECT_B_T = 'Connect'
@@ -1634,7 +1635,7 @@ Func _MiscEditStore()
 	Return $s
 EndFunc   ;==>_MiscEditStore
 Func _MiscGet($s, $adr)
-	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[6]
+	Local $retVal, $DTstr, $yeari, $moni, $dayi, $houri, $mini, $seci, $DTm[6], $sum
 	Select
 		Case $adr = $REP_NUM
 			$retVal = Dec(StringMid($s, 1, 4)) + 1
@@ -1699,11 +1700,17 @@ Func _MiscGet($s, $adr)
 			$retVal = StringMid($s, 245, 10)
 		Case $adr = $REP_CHECKSUM
 			$retVal = StringMid($s, 255, 2)
+		Case $adr = $REP_CHECKSUM_CALC
+			$sum = 0
+			For $i = 1 To 127
+				$sum += Dec(StringMid($s, $i * 2 - 1, 2))
+			Next
+			$retVal = StringRight(Hex($sum), 2)
 	EndSelect
 	Return $retVal
 EndFunc   ;==>_MiscGet
 Func _MiscOpen($mainHndl)
-	Local $errStatus, $retVal, $k, $ss, $snum, $sf
+	Local $errStatus, $retVal, $k, $ss, $snum, $sf, $CHKS, $CHKS_C, $err_msg
 	GUISetState(@SW_DISABLE, $mainHndl)
 	Local $filename = FileOpenDialog('Open bin as', '', 'Binary (*.bin)|All (*.*)')
 	$errStatus = @error
@@ -1740,13 +1747,18 @@ Func _MiscOpen($mainHndl)
 		FileSetPos($file, $MISC_START_REP_ADDR + $k * $MISC_READ_BYTE_COUNT, 0)
 		If @error = -1 Then ExitLoop
 		$ss = _StringToHex(FileRead($file, $MISC_READ_BYTE_COUNT))
+		$CHKS = _MiscGet($ss, $REP_CHECKSUM)
+		$CHKS_C = _MiscGet($ss, $REP_CHECKSUM_CALC)
+		$err_msg = ''
+		If $CHKS <> $CHKS_C Then $err_msg = ' !!!CHECHSUM NOT CORRECT!!!'
 		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE) & ',' & _MiscGet($ss, $REP_ZERO) & ',' & _MiscGet($ss, $REP_N_CHECKS) & ',' _
 				 & _MiscGet($ss, $REP_N_SELLS) & ',' & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' _
 				 & _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' _
 				 & _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' _
 				 & _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' _
 				 & _MiscGet($ss, $REP_G_TAX) & ',' & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' _
-				 & _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' & _MiscGet($ss, $REP_CHECKSUM)
+				 & _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' _
+				 & $CHKS & ',' & $CHKS_C & $err_msg
 		If $sf < 0 Or $sf > $MAX_REP Then
 			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
 			ExitLoop
