@@ -79,6 +79,7 @@ Global Const $FLAG_TIME_AUTO_UPDATE_MODE = 0x8000000 ;28
 Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = 0x10000000 ;29
 Global Const $FLAG_MISC_EDIT_STORE = 0x20000000 ;30
 Global Const $FLAG_MISC_SAVE = 0x40000000 ;31
+Global Const $FLAG_SEND_CMD_W_RET = 0x80000000 ;32
 
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
@@ -1446,30 +1447,13 @@ Func _HFopen($mainHndl)
 	Return $retVal
 EndFunc   ;==>_HFopen
 Func _HFread()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_HFread(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	_FlagOn($FLAG_HF_READ)
-	$retVal = 0
+	Local $data, $retVal = 0
 	Dim $HFs[8]
+	If _TestConnectMsg('_HFread()') Then Return 1
+	_FlagOn($FLAG_HF_READ)
 	For $k = 0 To 7
-		$dd = 'I' & $k
-		$failTry = 0
-		Do
-			$res = _SendCMD(43, $dd)
-			$rrRaw = _ReceiveAll()
-			$rr = _Validate($rrRaw)
-			$data = _GetData(_GetBody($rr))
-			;_DLog('$seq=' & $seq & ' $data=' & $data & @CRLF)
-			If $rr = '' Then $failTry += 1
-		Until $rr <> '' Or $failTry > $maxFailTry
-		If $failTry > $maxFailTry Then
-			_DLog('_HFread(): No response while reading data' & @CRLF)
-			$retVal = 1
-			ExitLoop
-		EndIf
+		$retVal = _SendCMDwRet(43, 'I' & $k, $data)
+		If $retVal Then ExitLoop
 		$HFs[$k] = $data
 	Next
 	If $retVal = 0 Then
@@ -1516,32 +1500,13 @@ Func _HFsave($mainHndl)
 	Return $retVal
 EndFunc   ;==>_HFsave
 Func _HFwrite()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_HFwrite(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	Local $beg = TimerInit()
+ 	Local $data, $retVal = 0
+	If _TestConnectMsg('_HFwrite()') Then Return 1
 	_FlagOn($FLAG_HF_WRITE)
 	_HFeditStore()
-	$retVal = 0
 	For $i = 0 To 7
-		$dd = $i & $HFstr[$i]
-		_DLog('_HFwrite(): dd = ' & $dd & @CRLF)
-		$failTry = 0
-		Do
-			$res = _SendCMD(43, $dd)
-			$rrRaw = _ReceiveAll()
-			$rr = _Validate($rrRaw)
-			$data = _GetData(_GetBody($rr))
-			_DLog('_HFwrite(): data = ' & $data & @CRLF)
-			If $rr = '' Then $failTry += 1
-		Until $rr <> '' Or $failTry > $maxFailTry
-		If $failTry > $maxFailTry Then
-			_DLog('_HFwrite(): No response while writing data' & @CRLF)
-			$retVal = 1
-			ExitLoop
-		EndIf
+		$retVal = _SendCMDwRet(43, $i & $HFstr[$i], $data)
+		If $retVal Then ExitLoop
 	Next
 	_FlagOff($FLAG_HF_WRITE)
 	Return $retVal
@@ -2317,3 +2282,27 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
+Func _SendCMDwRet($c, $d, ByRef $data)
+	Local $failTry = 0, $res, $rrRaw, $rr, $retVal = 0
+	_FlagOn($FLAG_SEND_CMD_W_RET, 1)
+	Do
+		$res = _SendCMD($c, $d)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('No response while writing data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_SEND_CMD_W_RET, 1)
+	Return $retVal
+EndFunc
+Func _TestConnectMsg($msg)
+		If _TestConnect() = '' Then
+		_DLog($msg & ': No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	Return 0
+EndFunc
