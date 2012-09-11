@@ -4,6 +4,10 @@
 #endregion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <CommMG.au3>
 #include <String.au3>
+Opt('MustDeclareVars', 1)
+
+Global $seq = 0
+
 Func _BCC4($s)
 	If $s == '' Then Return ''
 	Local $bcc = 0
@@ -69,6 +73,11 @@ Func _GetStatus($s)
 	If $s == '' Then Return ''
 	Return StringTrimRight(StringRight($s, 24), 12)
 EndFunc   ;==>_GetStatus
+Func _incSeq($i)
+	$i += 1
+	If $i > 95 Then $i = 0
+	Return $i
+EndFunc   ;==>_incSeq
 Func _MakeString($cmd, $data = '', $seq = 0)
 	If $cmd == 0 Then Return ''
 	Dim $bcchex[4]
@@ -138,9 +147,10 @@ Func _ReceiveAll($timeout = 1000)
 	Until StringLen($rstr) == 2 * ($lenS + 6)
 	Return $rstr
 EndFunc   ;==>_ReceiveAll
-Func _SendCMD($c, $d = '', $s = 0)
+Func _SendCMD($c, $d = '')
+	$seq = _incSeq($seq)
 	If $c == 0 Then Return ''
-	Local $str = _MakeString($c, $d, $s)
+	Local $str = _MakeString($c, $d, $seq)
 	Local $res = _CommSendString($str, 1)
 	Return $res
 EndFunc   ;==>_SendCMD

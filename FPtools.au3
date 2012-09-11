@@ -167,7 +167,6 @@ Global $blockSize = $BLOCK_SIZE_DEFAULT
 Global $maxFFcounter = 5
 Global $allBytes = $ALL_BYTES_DEFAULT
 Global $maxFailTry = 10
-Global $seq = 0
 Global $SLmax = 0, $CLmax = 0
 Global $PRnumS = $PR_NUM_S_DEFAULT
 Global $PRnumF = $PR_NUM_F_DEFAULT
@@ -209,8 +208,7 @@ Func _CashIn()
 	$retVal = 0
 	$dd = $CashIn
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(70, $dd, $seq)
+		$res = _SendCMD(70, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -233,8 +231,7 @@ Func _CashOut()
 	$retVal = 0
 	$dd = -$CashOut
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(70, $dd, $seq)
+		$res = _SendCMD(70, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -593,8 +590,7 @@ Func _Fiscalize($mainHndl)
 	_DLog('_Fiscalize(): $dd = ' & $dd & @CRLF)
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(72, $dd, $seq)
+		$res = _SendCMD(72, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -646,8 +642,7 @@ Func _FlashErase()
 	$dd = ''
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(130, $dd, $seq)
+		$res = _SendCMD(130, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -717,8 +712,7 @@ Func _FlashOpenNwrite()
 		$dd = Hex(Int($adr)) & ',' & $bs & ',' & _StringToHex($dd)
 		$failTry = 0
 		Do
-			$seq = _incSeq($seq)
-			$res = _SendCMD(135, $dd, $seq)
+			$res = _SendCMD(135, $dd)
 			$rrRaw = _ReceiveAll()
 			$rr = _Validate($rrRaw)
 			$data = _GetData(_GetBody($rr))
@@ -786,8 +780,7 @@ Func _FlashReadNsave()
 		$dd = Hex(Int($startAdr + $k * $blockSize), 5) & ',' & $bs
 		$failTry = 0
 		Do
-			$seq = _incSeq($seq)
-			$res = _SendCMD(116, $dd, $seq)
+			$res = _SendCMD(116, $dd)
 			$rrRaw = _ReceiveAll()
 			$rr = _Validate($rrRaw)
 			$data = _GetData(_GetBody($rr))
@@ -857,8 +850,7 @@ Func _FPtimeGet()
 	$dd = ''
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(62, $dd, $seq)
+		$res = _SendCMD(62, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -885,8 +877,7 @@ Func _FPtimeSet()
 	$dd = GUICtrlRead($timeDT)
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(61, $dd, $seq)
+		$res = _SendCMD(61, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -911,8 +902,7 @@ Func _GetFiscInfo()
 	$dd = '1'
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(90, $dd, $seq)
+		$res = _SendCMD(90, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -934,8 +924,7 @@ Func _GetFiscInfo()
 	$dd = ''
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(99, $dd, $seq)
+		$res = _SendCMD(99, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -951,8 +940,7 @@ Func _GetFiscInfo()
 	$dd = ''
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(97, $dd, $seq)
+		$res = _SendCMD(97, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1125,6 +1113,15 @@ Func _GetStatusB()
 	_FlagOff($FLAG_FISC_GET_STATUS)
 	Return 0
 EndFunc   ;==>_GetStatusB
+Func _GetVatMode()
+	Local $retVal
+	If GUICtrlRead($VatModeChB) = $GUI_CHECKED Then
+		$retVal = 1
+	Else
+		$retVal = 0
+	EndIf
+	Return $retVal
+EndFunc   ;==>_GetVatMode
 Func _GUIdel()
 	_FlagOff($FLAG_EXIT_GUI)
 	GUIDelete()
@@ -1461,8 +1458,7 @@ Func _HFread()
 		$dd = 'I' & $k
 		$failTry = 0
 		Do
-			$seq = _incSeq($seq)
-			$res = _SendCMD(43, $dd, $seq)
+			$res = _SendCMD(43, $dd)
 			$rrRaw = _ReceiveAll()
 			$rr = _Validate($rrRaw)
 			$data = _GetData(_GetBody($rr))
@@ -1534,8 +1530,7 @@ Func _HFwrite()
 		_DLog('_HFwrite(): dd = ' & $dd & @CRLF)
 		$failTry = 0
 		Do
-			$seq = _incSeq($seq)
-			$res = _SendCMD(43, $dd, $seq)
+			$res = _SendCMD(43, $dd)
 			$rrRaw = _ReceiveAll()
 			$rr = _Validate($rrRaw)
 			$data = _GetData(_GetBody($rr))
@@ -1551,11 +1546,6 @@ Func _HFwrite()
 	_FlagOff($FLAG_HF_WRITE)
 	Return $retVal
 EndFunc   ;==>_HFwrite
-Func _incSeq($i)
-	$i += 1
-	If $i > 95 Then $i = 0
-	Return $i
-EndFunc   ;==>_incSeq
 Func _IndShowTime()
 	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -1566,8 +1556,7 @@ Func _IndShowTime()
 	$retVal = 0
 	$dd = ''
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(63, $dd, $seq)
+		$res = _SendCMD(63, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1874,8 +1863,7 @@ Func _PrintCut()
 	$retVal = 0
 	$dd = ''
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(45, $dd, $seq)
+		$res = _SendCMD(45, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1897,8 +1885,7 @@ Func _PrintDiag()
 	_FlagOn($FLAG_PRINT_DIAG, 1)
 	$retVal = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(71, '', $seq)
+		$res = _SendCMD(71, '')
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1921,8 +1908,7 @@ Func _PrintX()
 	$retVal = 0
 	$dd = '0000,2'
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(69, $dd, $seq)
+		$res = _SendCMD(69, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1945,8 +1931,7 @@ Func _PrintZ()
 	$retVal = 0
 	$dd = '0000,0'
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(69, $dd, $seq)
+		$res = _SendCMD(69, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -1973,8 +1958,7 @@ Func _PRmakeDate()
 	_DLog('_PRmakeDate(): $dd = ' & $dd & @CRLF)
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(79, $dd, $seq)
+		$res = _SendCMD(79, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2001,8 +1985,7 @@ Func _PRmakeNum()
 	_DLog('_PRmakeNum(): $dd = ' & $dd & @CRLF)
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(95, $dd, $seq)
+		$res = _SendCMD(95, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2103,8 +2086,7 @@ Func _SetFactN($mainHndl)
 	$dd = '2,' & $i
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(91, $dd, $seq)
+		$res = _SendCMD(91, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2139,8 +2121,7 @@ Func _SetFiscN($mainHndl)
 	$dd = $i
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(92, $dd, $seq)
+		$res = _SendCMD(92, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2191,8 +2172,7 @@ Func _SetTaxRates($mainHndl)
 	_DLog('dd=' & $dd & @CRLF)
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(83, $dd, $seq)
+		$res = _SendCMD(83, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2206,6 +2186,13 @@ Func _SetTaxRates($mainHndl)
 	_FlagOff($FLAG_FISC_SET_TAX)
 	Return $retVal
 EndFunc   ;==>_SetTaxRates
+Func _SetVatMode($m)
+	If $m Then
+		GUICtrlSetState($VatModeChB, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($VatModeChB, $GUI_UNCHECKED)
+	EndIf
+EndFunc   ;==>_SetVatMode
 Func _SetVatN($mainHndl)
 	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
 	If _TestConnect() = '' Then
@@ -2223,8 +2210,7 @@ Func _SetVatN($mainHndl)
 	$dd = $i & ',' & _GetVatMode()
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(98, $dd, $seq)
+		$res = _SendCMD(98, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2253,8 +2239,7 @@ Func _SetVer()
 	$dd = ''
 	$failTry = 0
 	Do
-		$seq = _incSeq($seq)
-		$res = _SendCMD(131, $dd, $seq)
+		$res = _SendCMD(131, $dd)
 		$rrRaw = _ReceiveAll()
 		$rr = _Validate($rrRaw)
 		$data = _GetData(_GetBody($rr))
@@ -2301,7 +2286,7 @@ Func _StartMainLoop()
 EndFunc   ;==>_StartMainLoop
 Func _TestConnect()
 	Local $res, $rrRaw, $rr, $data
-	$res = _SendCMD(74, 'W', $seq)
+	$res = _SendCMD(74, 'W')
 	$rrRaw = _ReceiveAll()
 	$rr = _Validate($rrRaw)
 	$data = _GetData(_GetBody($rr))
@@ -2332,19 +2317,3 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
-Func _GetVatMode()
-	Local $retVal
-	If GUICtrlRead($VatModeChB) = $GUI_CHECKED Then
-		$retVal = 1
-	Else
-		$retVal = 0
-	EndIf
-	Return $retVal
-EndFunc
-Func _SetVatMode($m)
-	If $m Then
-		GUICtrlSetState($VatModeChB, $GUI_CHECKED)
-	Else
-		GUICtrlSetState($VatModeChB, $GUI_UNCHECKED)
-	EndIf
-EndFunc
