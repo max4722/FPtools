@@ -79,6 +79,7 @@ Global Const $FLAG_TIME_AUTO_UPDATE_MODE = 0x8000000 ;28
 Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = 0x10000000 ;29
 Global Const $FLAG_MISC_EDIT_STORE = 0x20000000 ;30
 Global Const $FLAG_MISC_SAVE = 0x40000000 ;31
+
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
 Global Const $REP_ZERO = 3
@@ -156,7 +157,7 @@ Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
 Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
-Global $timeAutoUpdateModeChB, $MiscStopB
+Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -585,7 +586,7 @@ Func _Fiscalize($mainHndl)
 	_FlagOn($FLAG_FISCALIZE)
 	$retVal = 0
 	If GUICtrlRead($RefiscChB) = $GUI_CHECKED Then
-		$dd = '0000,' & $i & ',' & GUICtrlRead($VatNI) & ',0'
+		$dd = '0000,' & $i & ',' & GUICtrlRead($VatNI) & ',' & _GetVatMode()
 	Else
 		$dd = '0000,' & $i
 	EndIf
@@ -946,6 +947,7 @@ Func _GetFiscInfo()
 		Return 1
 	EndIf
 	$VatN = StringTrimRight($data, 2)
+	_SetVatMode(StringRight($data, 1))
 	$dd = ''
 	$failTry = 0
 	Do
@@ -992,7 +994,7 @@ Func _GetFiscInfo()
 	GUICtrlSetState($TaxRateBChB, $GUI_CHECKED)
 	GUICtrlSetState($TaxRateVChB, $GUI_CHECKED)
 	GUICtrlSetState($TaxRateGChB, $GUI_CHECKED)
-	_DLog('$FactN=' & $FactN & ' $VatN=' & $VatN & ' $FiscN=' & $FiscN & ' $TaxRateA=' & $TaxRateA & ' $TaxRateB=' & $TaxRateB & ' $TaxRateV=' & $TaxRateV & ' $TaxRateG=' & $TaxRateG & @CRLF)
+	_DLog('$FactN=' & $FactN & ' $VatN=' & $VatN & ',' & _GetVatMode() & ' $FiscN=' & $FiscN & ' $TaxRateA=' & $TaxRateA & ' $TaxRateB=' & $TaxRateB & ' $TaxRateV=' & $TaxRateV & ' $TaxRateG=' & $TaxRateG & @CRLF)
 	$i = GUICtrlRead($FactNI)
 	If $i <> $FactN Then
 		GUICtrlSetData($FactNI, $FactN)
@@ -1171,6 +1173,7 @@ Func _GUIprepair()
 	$SetFactNB = GUICtrlCreateButton('Set', 55, 45, 35, 20, 0)
 	$VatNL = GUICtrlCreateLabel('VAT number:', 100, 5, 80, 20)
 	$VatNI = GUICtrlCreateInput('', 100, 20, 80, 20)
+	$VatModeChB = GUICtrlCreateCheckbox('ID', 100, 45, 36, 20)
 	$SetVatNB = GUICtrlCreateButton('Set', 145, 45, 35, 20, 0)
 	$FiscNL = GUICtrlCreateLabel('Fiscal number:', 190, 5, 80, 20)
 	$FiscNI = GUICtrlCreateInput('', 190, 20, 80, 20)
@@ -1293,6 +1296,7 @@ Func _GUIprepair()
 	_CtrlListAdd($CashOutB)
 	_CtrlListAdd($CashInI)
 	_CtrlListAdd($CashOutI)
+	_CtrlListAdd($VatModeChB)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -2216,7 +2220,7 @@ Func _SetVatN($mainHndl)
 	EndIf
 	_FlagOn($FLAG_FISC_SET_FISC_N)
 	$retVal = 0
-	$dd = $i & ',0'
+	$dd = $i & ',' & _GetVatMode()
 	$failTry = 0
 	Do
 		$seq = _incSeq($seq)
@@ -2328,3 +2332,19 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
+Func _GetVatMode()
+	Local $retVal
+	If GUICtrlRead($VatModeChB) = $GUI_CHECKED Then
+		$retVal = 1
+	Else
+		$retVal = 0
+	EndIf
+	Return $retVal
+EndFunc
+Func _SetVatMode($m)
+	If $m Then
+		GUICtrlSetState($VatModeChB, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($VatModeChB, $GUI_UNCHECKED)
+	EndIf
+EndFunc
