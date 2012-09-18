@@ -1333,6 +1333,7 @@ Func _GUIprepair()
 	GUICtrlSetState($LeftI, $GUI_DISABLE)
 	GUICtrlSetState($curBPSI, $GUI_DISABLE)
 	GUICtrlSetState($periodFormDateCB, $GUI_CHECKED)
+	GUICtrlSetState($VatModeChB, $GUI_UNCHECKED)
 	#endregion GUICtrlSetState
 	#region _ServiceListAdd
 	_ServiceListAdd($writeFlashB)
@@ -2152,7 +2153,7 @@ Func _SetTaxRates($mainHndl)
 	Return $retVal
 EndFunc   ;==>_SetTaxRates
 Func _SetVatMode($m)
-	If $m Then
+	If $m = 1 Then
 		GUICtrlSetState($VatModeChB, $GUI_CHECKED)
 	Else
 		GUICtrlSetState($VatModeChB, $GUI_UNCHECKED)
