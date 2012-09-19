@@ -23,6 +23,7 @@ Global Const $FLAG_REG_4 = 0x04000000
 Global Const $FLAG_REG_5 = 0x05000000
 Global Const $FLAG_REG_6 = 0x06000000
 Global Const $FLAG_REG_7 = 0x07000000
+;~ #cs
 ;$FLAG_REG_0
 Global Const $FLAG_EXIT_RWflash = 				$FLAG_REG_0 + 0x00000001 ;1
 Global Const $FLAG_EXIT_GUI = 					$FLAG_REG_0 + 0x00000002 ;2
@@ -90,7 +91,9 @@ Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = $FLAG_REG_2 + 0x00001000 ;13
 Global Const $FLAG_MISC_EDIT_STORE = 			$FLAG_REG_2 + 0x00002000 ;14
 Global Const $FLAG_MISC_SAVE = 					$FLAG_REG_2 + 0x00004000 ;15
 Global Const $FLAG_SEND_CMD_W_RET = 			$FLAG_REG_2 + 0x00008000 ;16
-
+Global Const $FLAG_LOGO_ENABLE = 				$FLAG_REG_2 + 0x00010000 ;17
+Global Const $FLAG_LOGO_DISABLE = 				$FLAG_REG_2 + 0x00020000 ;18
+;~ #ce
 
 Global Const $REP_NUM = 1
 Global Const $REP_DATE = 2
@@ -169,7 +172,7 @@ Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
 Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
-Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB
+Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB, $LogoEnableB, $LogoDisableB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -377,25 +380,25 @@ Func _checkGUImsg()
 			Case $m = $HFopenB
 				$res = _HFopen($h)
 				If $res Then
-					_DLog('_checkGUImsg(): _HFopen() = ' & $res & @CRLF)
 				EndIf
 			Case $m = $HFsaveB
 				$res = _HFsave($h)
 				If $res Then
-					_DLog('_checkGUImsg(): _HFsave() = ' & $res & @CRLF)
 				EndIf
 			Case $m = $HFreadB
 				$res = _HFread()
 				If $res Then
-					_DLog('_checkGUImsg(): _HFread() = ' & $res & @CRLF)
 				EndIf
 			Case $m = $HFwriteB
 				$res = _HFwrite()
 				If $res Then
-					_DLog('_checkGUImsg(): _HFwrite() = ' & $res & @CRLF)
 				EndIf
 			Case $m = $HFPrintDiagB
 				_PrintDiag()
+			Case $m = $LogoEnableB
+				_LogoEnable()
+			Case $m = $LogoDisableB
+				_LogoDisable()
 		EndSelect
 	ElseIf $h = $_misc Then
 		Select
@@ -1039,6 +1042,8 @@ Func _GUIprepair()
 	$HFopenB = GUICtrlCreateButton('Open', 70, 175 - 30, 50, 20, 0)
 	$HFsaveB = GUICtrlCreateButton('Save', 70, 205 - 30, 50, 20, 0)
 	$HFPrintDiagB = GUICtrlCreateButton('Diag', 130, 175 - 30, 50, 20, 0)
+	$LogoEnableB = GUICtrlCreateButton('Logo On', 130, 205 - 30, 50, 20, 0)
+	$LogoDisableB = GUICtrlCreateButton('Logo Off', 190, 205 - 30, 50, 20, 0)
 	#endregion $_hf
 	#region $_main
 	$_main = GUICreate('FPtools', 367, 421)
@@ -1410,6 +1415,22 @@ Func _Info($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Info
+Func _LogoEnable()
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_LOGO_ENABLE)
+	$retVal = _SendCMDwRet(43, 'L1', $data)
+	_FlagOff($FLAG_LOGO_ENABLE)
+	Return $retVal
+EndFunc
+Func _LogoDisable()
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_LOGO_DISABLE)
+	$retVal = _SendCMDwRet(43, 'L0', $data)
+	_FlagOff($FLAG_LOGO_DISABLE)
+	Return $retVal
+EndFunc
 Func _MiscEdit()
 	_FlagOn($FLAG_MISC_EDIT)
 	GUISetState(@SW_DISABLE)
