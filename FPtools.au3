@@ -200,48 +200,18 @@ Func _AllCtrlEnable()
 	_FlagOff($FLAG_ALLCTRL_ENABLE, 1)
 EndFunc   ;==>_AllCtrlEnable
 Func _CashIn()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_CashIn(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_CASH_IN, 1)
-	$retVal = 0
-	$dd = $CashIn
-	Do
-		$res = _SendCMD(70, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_CashIn(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(70, $CashIn, $data)
 	_FlagOff($FLAG_CASH_IN, 1)
 	Return $retVal
 EndFunc   ;==>_CashIn
 Func _CashOut()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_CashOut(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_CASH_OUT, 1)
-	$retVal = 0
-	$dd = -$CashOut
-	Do
-		$res = _SendCMD(70, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_CashOut(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(70, -$CashOut, $data)
 	_FlagOff($FLAG_CASH_OUT, 1)
 	Return $retVal
 EndFunc   ;==>_CashOut
@@ -570,11 +540,8 @@ Func _CtrlListAdd($h)
 	EndIf
 EndFunc   ;==>_CtrlListAdd
 Func _Fiscalize($mainHndl)
-	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_Fiscalize(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $i, $retVal, $dd, $data
+	If _TestConnect() = '' Then Return 1
 	$i = GUICtrlRead($FactNI)
 	If StringLen($i) <> 10 Or Not StringIsDigit(StringRight($i, 8)) Then
 		_DLog('_Fiscalize(): Not valid factory number ' & $i & @CRLF)
@@ -582,25 +549,13 @@ Func _Fiscalize($mainHndl)
 		Return 1
 	EndIf
 	_FlagOn($FLAG_FISCALIZE)
-	$retVal = 0
 	If GUICtrlRead($RefiscChB) = $GUI_CHECKED Then
 		$dd = '0000,' & $i & ',' & GUICtrlRead($VatNI) & ',' & _GetVatMode()
 	Else
 		$dd = '0000,' & $i
 	EndIf
 	_DLog('_Fiscalize(): $dd = ' & $dd & @CRLF)
-	$failTry = 0
-	Do
-		$res = _SendCMD(72, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_Fiscalize(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(72, $dd, $data)
 	If $data = 'P' Then _DLog('_Fiscalize(): OK' & @CRLF)
 	If StringIsDigit($data) Then
 		_DLog('_Fiscalize(): Failure, ' & $data & @CRLF)
@@ -632,27 +587,10 @@ Func _FlagOn($f, $i = 0)
 	$guiState[$i] = BitOR($guiState[$i], $f)
 EndFunc   ;==>_FlagOn
 Func _FlashErase()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_FlashErase(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	Local $beg = TimerInit()
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_ERASE_FLASH)
-	$retVal = 0
-	$dd = ''
-	$failTry = 0
-	Do
-		$res = _SendCMD(130, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_FlashErase(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(130, '', $data)
 	If $data = 'P' Then _DLog('_FlashErase(): OK' & @CRLF)
 	If $data = 'F' Then
 		_DLog('_FlashErase(): Failure' & @CRLF)
@@ -662,7 +600,7 @@ Func _FlashErase()
 	Return $retVal
 EndFunc   ;==>_FlashErase
 Func _FlashOpenNwrite()
-	Local $filename, $errStatus, $file, $FFcounter, $beg, $oldT, $retVal, $maxk, $bs, $dd, $failTry, $res, $rrRaw, $rr, $data, $timerD, $fileSize, $adr
+	Local $filename, $errStatus, $file, $beg, $oldT, $retVal, $maxk, $bs, $dd, $data, $timerD, $fileSize, $adr
 	GUISetState(@SW_DISABLE, $_main)
 	$filename = FileOpenDialog('Open flash memory as', StringRight($FactN, 7), 'Binary (*.bin)|All (*.*)')
 	$errStatus = @error
@@ -682,11 +620,7 @@ Func _FlashOpenNwrite()
 		_DLog('_FlashOpenNwrite(): FileOpen()' & @CRLF)
 		Return 1
 	EndIf
-	If _TestConnect() = '' Then
-		_DLog('_FlashOpenNwrite(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	$FFcounter = 0
+	If _TestConnect() = '' Then Return 1
 	$beg = TimerInit()
 	$oldT = 0
 	_FlagOn($FLAG_WRITE_FLASH)
@@ -711,19 +645,7 @@ Func _FlashOpenNwrite()
 		FileSetPos($file, $adr, 0)
 		$dd = FileRead($file, $bs)
 		$dd = Hex(Int($adr)) & ',' & $bs & ',' & _StringToHex($dd)
-		$failTry = 0
-		Do
-			$res = _SendCMD(135, $dd)
-			$rrRaw = _ReceiveAll()
-			$rr = _Validate($rrRaw)
-			$data = _GetData(_GetBody($rr))
-			If $data = '' Then $failTry += 1
-		Until $data <> '' Or $failTry > $maxFailTry
-		If $failTry > $maxFailTry Then
-			_DLog('_FlashOpenNwrite(): No response while writing data' & @CRLF)
-			$retVal = 1
-			ExitLoop
-		EndIf
+		$retVal = _SendCMDwRet(135, $dd, $data)
 		$timerD = TimerDiff($beg)
 		If Int($timerD / 1000) <> $oldT Then
 			$oldT = Int($timerD / 1000)
@@ -738,7 +660,7 @@ Func _FlashOpenNwrite()
 	Return $retVal
 EndFunc   ;==>_FlashOpenNwrite
 Func _FlashReadNsave()
-	Local $filename, $errStatus, $file, $FFcounter, $beg, $oldT, $retVal, $maxk, $bs, $dd, $failTry, $res, $rrRaw, $rr, $data, $timerD, $fileSize
+	Local $filename, $errStatus, $file, $FFcounter, $beg, $oldT, $retVal, $maxk, $bs, $dd, $data, $timerD, $fileSize
 	GUISetState(@SW_DISABLE, $_main)
 	$filename = FileSaveDialog('Save flash memory as', '', 'Binary (*.bin)|All (*.*)', 16, StringRight($FactN, 7))
 	$errStatus = @error
@@ -758,15 +680,10 @@ Func _FlashReadNsave()
 		_DLog('_FlashReadNsave(): FileOpen()' & @CRLF)
 		Return 1
 	EndIf
-	If _TestConnect() = '' Then
-		_DLog('_FlashReadNsave(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	$FFcounter = 0
+	If _TestConnect() = '' Then Return 1
 	$beg = TimerInit()
 	$oldT = 0
 	_FlagOn($FLAG_READ_FLASH)
-	$retVal = 0
 	$maxk = Floor($allBytes / $blockSize)
 	For $k = 0 To $maxk
 		_checkGUImsg()
@@ -779,19 +696,7 @@ Func _FlashReadNsave()
 		If $allBytes - $k * $blockSize < 64 Then $bs = $allBytes - $k * $blockSize
 		If $bs = 0 Then ExitLoop
 		$dd = Hex(Int($startAdr + $k * $blockSize), 5) & ',' & $bs
-		$failTry = 0
-		Do
-			$res = _SendCMD(116, $dd)
-			$rrRaw = _ReceiveAll()
-			$rr = _Validate($rrRaw)
-			$data = _GetData(_GetBody($rr))
-			If $data = '' Then $failTry += 1
-		Until $data <> '' Or $failTry > $maxFailTry
-		If $failTry > $maxFailTry Then
-			_DLog('_FlashReadNsave(): No response while reading data' & @CRLF)
-			$retVal = 1
-			ExitLoop
-		EndIf
+		$retVal = _SendCMDwRet(116, $dd, $data)
 		If $startAdr + $blockSize * $k >= $FLASH_ADR_Z And StringCompare($data, _StringRepeat('FF', $blockSize)) = 0 Then
 			$FFcounter += 1
 			If $FFcounter > $maxFFcounter Then ExitLoop
@@ -841,26 +746,11 @@ Func _FPmodelStringGet($m)
 	Return $FPModelStrM[$i]
 EndFunc   ;==>_FPmodelStringGet
 Func _FPtimeGet()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_FPtimeGet(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_TIME_GET)
-	$retVal = 0
-	$dd = ''
-	$failTry = 0
-	Do
-		$res = _SendCMD(62, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $data = '' Then $failTry += 1
-	Until $data <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_FPtimeGet(): No response while reading data' & @CRLF)
-		$retVal = 1
-	Else
+	$retVal = _SendCMDwRet(62, '', $data)
+	If $retVal = 0 Then
 		$data = '20' & StringMid($data, 7, 2) & '/' & StringMid($data, 4, 2) & '/' & StringLeft($data, 2) & StringRight($data, 9)
 		GUICtrlSetData($timeDT, $data)
 	EndIf
@@ -868,51 +758,22 @@ Func _FPtimeGet()
 	Return $retVal
 EndFunc   ;==>_FPtimeGet
 Func _FPtimeSet()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_FPtimeSet(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_TIME_SET)
-	$retVal = 0
-	$dd = GUICtrlRead($timeDT)
-	$failTry = 0
-	Do
-		$res = _SendCMD(61, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_FPtimeSet(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(61, GUICtrlRead($timeDT), $data)
 	_FlagOff($FLAG_TIME_SET)
 	Return $retVal
 EndFunc   ;==>_FPtimeSet
 Func _GetFiscInfo()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data, $i, $j, $m
-	If _TestConnect() = '' Then
-		_DLog('_GetFiscInfo(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data, $i, $j, $m
+	If _TestConnect() = '' Then Return 1
 	Local $beg = TimerInit()
-	$retVal = 0
 	_FlagOn($FLAG_GET_FISC_INFO)
-	$dd = '1'
-	$failTry = 0
-	Do
-		$res = _SendCMD(90, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_GetFiscInfo(): No response while reading data' & @CRLF)
+	$retVal = _SendCMDwRet(90, '1', $data)
+	If $retVal Then
 		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
+		Return $retVal
 	EndIf
 	$m = _FPmodelModeGet()
 	Select
@@ -922,35 +783,17 @@ Func _GetFiscInfo()
 			$FactN = StringLeft(StringTrimLeft($data, 43), 10)
 	EndSelect
 	$FiscN = StringRight($data, 10)
-	$dd = ''
-	$failTry = 0
-	Do
-		$res = _SendCMD(99, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_GetFiscInfo(): No response while reading data' & @CRLF)
+	$retVal = _SendCMDwRet(99, '', $data)
+	If $retVal Then
 		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
+		Return $retVal
 	EndIf
 	$VatN = StringTrimRight($data, 2)
 	_SetVatMode(StringRight($data, 1))
-	$dd = ''
-	$failTry = 0
-	Do
-		$res = _SendCMD(97, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_GetFiscInfo(): No response while reading data' & @CRLF)
+	$retVal = _SendCMDwRet(97, '', $data)
+	If $retVal Then
 		_FlagOff($FLAG_GET_FISC_INFO)
-		Return 1
+		Return $retVal
 	EndIf
 	$i = StringSplit($data, ',')
 	If $i[0] Then
@@ -1501,7 +1344,7 @@ Func _HFsave($mainHndl)
 	Return $retVal
 EndFunc   ;==>_HFsave
 Func _HFwrite()
- 	Local $data, $retVal = 0
+	Local $data, $retVal = 0
 	If _TestConnectMsg('_HFwrite()') Then Return 1
 	_FlagOn($FLAG_HF_WRITE)
 	_HFeditStore()
@@ -1513,25 +1356,10 @@ Func _HFwrite()
 	Return $retVal
 EndFunc   ;==>_HFwrite
 Func _IndShowTime()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_IndShowTime(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_IND_SHOW_TIME, 1)
-	$retVal = 0
-	$dd = ''
-	Do
-		$res = _SendCMD(63, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_IndShowTime(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(63, '', $data)
 	_FlagOff($FLAG_IND_SHOW_TIME, 1)
 	Return $retVal
 EndFunc   ;==>_IndShowTime
@@ -1548,7 +1376,7 @@ Func _Info($s, $mainHndl)
 	Return $res
 EndFunc   ;==>_Info
 Func _MiscEdit()
-	_FlagOn($FLAG_MISC_EDIT)
+	_FlagOn($FLAG_MISC_EDIT, 1)
 	GUISetState(@SW_DISABLE)
 	GUISwitch($_misc)
 	GUISetState(@SW_SHOW)
@@ -1561,7 +1389,7 @@ Func _MiscEdit()
 	GUISetState(@SW_HIDE)
 	GUISetState(@SW_SHOW)
 	GUISetState(@SW_ENABLE)
-	_FlagOff($FLAG_MISC_EDIT)
+	_FlagOff($FLAG_MISC_EDIT, 1)
 EndFunc   ;==>_MiscEdit
 Func _MiscEditRefresh()
 	Local $s, $cr
@@ -1820,147 +1648,56 @@ Func _Port()
 	Return 0
 EndFunc   ;==>_Port
 Func _PrintCut()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintCut(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_CUT, 1)
-	$retVal = 0
-	$dd = ''
-	Do
-		$res = _SendCMD(45, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintCut(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(45, '', $data)
 	_FlagOff($FLAG_PRINT_CUT, 1)
 	Return $retVal
 EndFunc   ;==>_PrintCut
 Func _PrintDiag()
-	Local $retVal, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintDiag(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_DIAG, 1)
-	$retVal = 0
-	Do
-		$res = _SendCMD(71, '')
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintDiag(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(71, '', $data)
 	_FlagOff($FLAG_PRINT_DIAG, 1)
 	Return $retVal
 EndFunc   ;==>_PrintDiag
 Func _PrintX()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintX(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_X, 1)
-	$retVal = 0
-	$dd = '0000,2'
-	Do
-		$res = _SendCMD(69, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintX(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(69, '0000,2', $data)
 	_FlagOff($FLAG_PRINT_X, 1)
 	Return $retVal
 EndFunc   ;==>_PrintX
 Func _PrintZ()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PrintZ(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_Z, 1)
-	$retVal = 0
-	$dd = '0000,0'
-	Do
-		$res = _SendCMD(69, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PrintZ(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(69, '0000,0', $data)
 	_FlagOff($FLAG_PRINT_Z, 1)
 	Return $retVal
 EndFunc   ;==>_PrintZ
 Func _PRmakeDate()
-	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PRmakeDate(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $ds, $df, $dd, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PR_MAKE_DATE, 1)
-	$retVal = 0
 	$ds = GUICtrlRead($periodsDT)
 	$df = GUICtrlRead($periodfDT)
 	$dd = '0000,' & StringReplace(StringLeft($ds, 8), '-', '') & ',' & StringReplace(StringLeft($df, 8), '-', '')
-	_DLog('_PRmakeDate(): $dd = ' & $dd & @CRLF)
-	$failTry = 0
-	Do
-		$res = _SendCMD(79, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PRmakeDate(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(79, $dd, $data)
 	_FlagOff($FLAG_PR_MAKE_DATE, 1)
 	Return $retVal
 EndFunc   ;==>_PRmakeDate
 Func _PRmakeNum()
-	Local $retVal, $ds, $df, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_PRmakeNum(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $ds, $df, $dd, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PR_MAKE_NUM, 1)
-	$retVal = 0
 	$ds = GUICtrlRead($periodsI)
 	$df = GUICtrlRead($periodfI)
 	$dd = '0000,' & $ds & ',' & $df
-	_DLog('_PRmakeNum(): $dd = ' & $dd & @CRLF)
-	$failTry = 0
-	Do
-		$res = _SendCMD(95, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_PRmakeNum(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(95, $dd, $data)
 	_FlagOff($FLAG_PR_MAKE_NUM, 1)
 	Return $retVal
 EndFunc   ;==>_PRmakeNum
@@ -2000,6 +1737,23 @@ Func _PRsingleModeSet($m)
 	EndIf
 	_FlagOff($FLAG_PR_SINGLE_MODE_FUNC, 1)
 EndFunc   ;==>_PRsingleModeSet
+Func _SendCMDwRet($c, $d, ByRef $data)
+	Local $failTry = 0, $res, $rrRaw, $rr, $retVal = 0
+	_FlagOn($FLAG_SEND_CMD_W_RET, 1)
+	Do
+		$res = _SendCMD($c, $d)
+		$rrRaw = _ReceiveAll()
+		$rr = _Validate($rrRaw)
+		$data = _GetData(_GetBody($rr))
+		If $rr = '' Then $failTry += 1
+	Until $rr <> '' Or $failTry > $maxFailTry
+	If $failTry > $maxFailTry Then
+		_DLog('No response while writing data' & @CRLF)
+		$retVal = 1
+	EndIf
+	_FlagOff($FLAG_SEND_CMD_W_RET, 1)
+	Return $retVal
+EndFunc   ;==>_SendCMDwRet
 Func _ServiceDisable()
 	_FlagOn($FLAG_SERVICE_DISABLED, 1)
 	_FlagOff($FLAG_SERVICE)
@@ -2036,11 +1790,8 @@ Func _ServiceListAdd($h)
 	EndIf
 EndFunc   ;==>_ServiceListAdd
 Func _SetFactN($mainHndl)
-	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_SetFactN(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $i, $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	$i = GUICtrlRead($FactNI)
 	If StringLen($i) <> 10 Or Not StringIsDigit(StringRight($i, 8)) Then
 		_DLog('_SetFactN(): Not valid factory number ' & $i & @CRLF)
@@ -2048,34 +1799,20 @@ Func _SetFactN($mainHndl)
 		Return 1
 	EndIf
 	_FlagOn($FLAG_FISC_SET_FACT_N)
-	$retVal = 0
-	$dd = '2,' & $i
-	$failTry = 0
-	Do
-		$res = _SendCMD(91, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_SetFactN(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	If $data = 'P' Then _DLog('_SetFactN(): OK' & @CRLF)
-	If $data = 'F' Then
-		_DLog('_SetFactN(): Failure' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(91, '2,' & $i, $data)
+	Select
+		Case $data = 'P'
+			_DLog('_SetFactN(): OK' & @CRLF)
+		Case $data = 'F'
+			_DLog('_SetFactN(): Failure' & @CRLF)
+			$retVal = 1
+	EndSelect
 	_FlagOff($FLAG_FISC_SET_FACT_N)
 	Return $retVal
 EndFunc   ;==>_SetFactN
 Func _SetFiscN($mainHndl)
-	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_SetFiscN(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $i, $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	$i = GUICtrlRead($FiscNI)
 	If StringLen($i) <> 10 Or Not StringIsDigit($i) Then
 		_DLog('_SetFiscN(): Not valid fiscal number ' & $i & @CRLF)
@@ -2083,44 +1820,28 @@ Func _SetFiscN($mainHndl)
 		Return 1
 	EndIf
 	_FlagOn($FLAG_FISC_SET_FISC_N)
-	$retVal = 0
-	$dd = $i
-	$failTry = 0
-	Do
-		$res = _SendCMD(92, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_SetFiscN(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	If $data = 'P' Then _DLog('_SetFiscN(): OK' & @CRLF)
-	If $data = 'F' Then
-		_DLog('_SetFiscN(): Failure' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(92, $i, $data)
+	Select
+		Case $data = 'P'
+			_DLog('_SetFiscN(): OK' & @CRLF)
+		Case $data = 'F'
+			_DLog('_SetFiscN(): Failure' & @CRLF)
+			$retVal = 1
+	EndSelect
 	_FlagOff($FLAG_FISC_SET_FISC_N)
 	Return $retVal
 EndFunc   ;==>_SetFiscN
 Func _SetTaxRates($mainHndl)
-	Local $iA, $iB, $iV, $iG, $retVal, $jA, $jB, $jV, $jG, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_SetTaxRates(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $iA, $iB, $iV, $iG, $retVal, $jA, $jB, $jV, $jG, $dd, $data
+	If _TestConnect() = '' Then Return 1
 	$iA = GUICtrlRead($TaxRateAI)
 	$iB = GUICtrlRead($TaxRateBI)
 	$iV = GUICtrlRead($TaxRateVI)
 	$iG = GUICtrlRead($TaxRateGI)
-	_DLog('$A=' & $iA & ' $B=' & $iB & ' $V=' & $iV & ' $G=' & $iG & @CRLF)
 	If $iA < 0 Or $iA > 99.99 Or _
 			$iB < 0 Or $iB > 99.99 Or _
 			$iV < 0 Or $iV > 99.99 Or _
 			$iG < 0 Or $iG > 99.99 Then
-		_DLog('_SetTaxRates(): Not valid tax rate number' & @CRLF)
 		_Info('Error tax rate number', $mainHndl)
 		Return 1
 	EndIf
@@ -2135,20 +1856,7 @@ Func _SetTaxRates($mainHndl)
 	If GUICtrlRead($TaxRateVChB) = $GUI_CHECKED Then $jV = 1
 	If GUICtrlRead($TaxRateGChB) = $GUI_CHECKED Then $jG = 1
 	$dd = '0000,2,' & $jA & $jB & $jV & $jG & ',' & $iA & ',' & $iB & ',' & $iV & ',' & $iG
-	_DLog('dd=' & $dd & @CRLF)
-	$failTry = 0
-	Do
-		$res = _SendCMD(83, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_SetTaxRates(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	_DLog('$data=' & $data & @CRLF)
+	$retVal = _SendCMDwRet(83, $dd, $data)
 	_FlagOff($FLAG_FISC_SET_TAX)
 	Return $retVal
 EndFunc   ;==>_SetTaxRates
@@ -2160,66 +1868,37 @@ Func _SetVatMode($m)
 	EndIf
 EndFunc   ;==>_SetVatMode
 Func _SetVatN($mainHndl)
-	Local $i, $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_SetVatN(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $i, $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	$i = GUICtrlRead($VatNI)
 	If StringLen($i) <> 12 Then
-		_DLog('_SetVatN(): Not valid VAT number ' & $i & @CRLF)
 		_Info('Error number', $mainHndl)
 		Return 1
 	EndIf
 	_FlagOn($FLAG_FISC_SET_FISC_N)
-	$retVal = 0
-	$dd = $i & ',' & _GetVatMode()
-	$failTry = 0
-	Do
-		$res = _SendCMD(98, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_SetVatN(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	If $data = 'P' Then _DLog('_SetVatN(): OK' & @CRLF)
-	If $data = 'F' Then
-		_DLog('_SetVatN(): Failure' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(98, $i & ',' & _GetVatMode(), $data)
+	Select
+		Case $data = 'P'
+			_DLog('_SetVatN(): OK' & @CRLF)
+		Case $data = 'F'
+			_DLog('_SetVatN(): Failure' & @CRLF)
+			$retVal = 1
+	EndSelect
 	_FlagOff($FLAG_FISC_SET_FISC_N)
 	Return $retVal
 EndFunc   ;==>_SetVatN
 Func _SetVer()
-	Local $retVal, $dd, $failTry, $res, $rrRaw, $rr, $data
-	If _TestConnect() = '' Then
-		_DLog('_SetVer(): No response from printer' & @CRLF)
-		Return 1
-	EndIf
+	Local $retVal, $data
+	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_FISC_SET_VER)
-	$retVal = 0
-	$dd = ''
-	$failTry = 0
-	Do
-		$res = _SendCMD(131, $dd)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('_SetVer(): No response while reading data' & @CRLF)
-		$retVal = 1
-	EndIf
-	If $data = 'P' Then _DLog('_SetVer(): OK' & @CRLF)
-	If $data = 'F' Then
-		_DLog('_SetVer(): Failure' & @CRLF)
-		$retVal = 1
-	EndIf
+	$retVal = _SendCMDwRet(131, '', $data)
+	Select
+		Case $data = 'P'
+			_DLog('_SetVer(): OK' & @CRLF)
+		Case $data = 'F'
+			_DLog('_SetVer(): Failure' & @CRLF)
+			$retVal = 1
+	EndSelect
 	_FlagOff($FLAG_FISC_SET_VER)
 	Return $retVal
 EndFunc   ;==>_SetVer
@@ -2257,8 +1936,16 @@ Func _TestConnect()
 	$rr = _Validate($rrRaw)
 	$data = _GetData(_GetBody($rr))
 	If StringLen($data) = 6 Then $statusBytes = $data
+	If $data = '' Then _DLog('No response from printer' & @CRLF)
 	Return $data
 EndFunc   ;==>_TestConnect
+Func _TestConnectMsg($msg)
+	If _TestConnect() = '' Then
+		_DLog($msg & ': No response from printer' & @CRLF)
+		Return 1
+	EndIf
+	Return 0
+EndFunc   ;==>_TestConnectMsg
 Func _TimeAutoUpdateModeGet()
 	Return _Flag($FLAG_TIME_AUTO_UPDATE_MODE, 1)
 EndFunc   ;==>_TimeAutoUpdateModeGet
@@ -2283,27 +1970,3 @@ Func _Warn($s, $mainHndl)
 	GUISetState(@SW_SHOW, $mainHndl)
 	Return $res
 EndFunc   ;==>_Warn
-Func _SendCMDwRet($c, $d, ByRef $data)
-	Local $failTry = 0, $res, $rrRaw, $rr, $retVal = 0
-	_FlagOn($FLAG_SEND_CMD_W_RET, 1)
-	Do
-		$res = _SendCMD($c, $d)
-		$rrRaw = _ReceiveAll()
-		$rr = _Validate($rrRaw)
-		$data = _GetData(_GetBody($rr))
-		If $rr = '' Then $failTry += 1
-	Until $rr <> '' Or $failTry > $maxFailTry
-	If $failTry > $maxFailTry Then
-		_DLog('No response while writing data' & @CRLF)
-		$retVal = 1
-	EndIf
-	_FlagOff($FLAG_SEND_CMD_W_RET, 1)
-	Return $retVal
-EndFunc
-Func _TestConnectMsg($msg)
-		If _TestConnect() = '' Then
-		_DLog($msg & ': No response from printer' & @CRLF)
-		Return 1
-	EndIf
-	Return 0
-EndFunc
