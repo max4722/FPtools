@@ -4,7 +4,8 @@
 #AutoIt3Wrapper_Res_requestedExecutionLevel=highestAvailable
 #Tidy_Parameters=/sfc
 #endregion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#include <3530Ser.au3>
+#include '3530Ser.au3'
+#include 'Const.au3'
 #include <GUIConstantsEx.au3>
 #include <WindowsConstants.au3>
 #include <EditConstants.au3>
@@ -15,152 +16,6 @@
 #include <Array.au3>
 Opt('MustDeclareVars', 1)
 #region ConstsVars
-Global Const $FLAG_REG_0 = 0x00000000
-Global Const $FLAG_REG_1 = 0x01000000
-Global Const $FLAG_REG_2 = 0x02000000
-Global Const $FLAG_REG_3 = 0x03000000
-Global Const $FLAG_REG_4 = 0x04000000
-Global Const $FLAG_REG_5 = 0x05000000
-Global Const $FLAG_REG_6 = 0x06000000
-Global Const $FLAG_REG_7 = 0x07000000
-;~ #cs
-;$FLAG_REG_0
-Global Const $FLAG_EXIT_RWflash = 				$FLAG_REG_0 + 0x00000001 ;1
-Global Const $FLAG_EXIT_GUI = 					$FLAG_REG_0 + 0x00000002 ;2
-Global Const $FLAG_READ_FLASH = 				$FLAG_REG_0 + 0x00000004 ;3
-Global Const $FLAG_SERVICE = 					$FLAG_REG_0 + 0x00000008 ;4
-Global Const $FLAG_WRITE_FLASH = 				$FLAG_REG_0 + 0x00000010 ;5
-Global Const $FLAG_ERASE_FLASH = 				$FLAG_REG_0 + 0x00000020 ;6
-Global Const $FLAG_GET_FISC_INFO = 				$FLAG_REG_0 + 0x00000040 ;7
-Global Const $FLAG_PERIOD_MODE = 				$FLAG_REG_0 + 0x00000080 ;8
-Global Const $FLAG_TIME_SET = 					$FLAG_REG_0 + 0x00000100 ;9
-Global Const $FLAG_TIME_GET = 					$FLAG_REG_0 + 0x00000200 ;10
-Global Const $FLAG_TIME_GET_PC = 				$FLAG_REG_0 + 0x00000400 ;11
-Global Const $FLAG_TIME_GET_FACT_N = 			$FLAG_REG_0 + 0x00000800 ;12
-Global Const $FLAG_FISC_GET_VAT_N = 			$FLAG_REG_0 + 0x00001000 ;13
-Global Const $FLAG_FISC_GET_FISC_N = 			$FLAG_REG_0 + 0x00002000 ;14
-Global Const $FLAG_FISC_REFRESH = 				$FLAG_REG_0 + 0x00004000 ;15
-Global Const $FLAG_FISC_SET_FACT_N = 			$FLAG_REG_0 + 0x00008000 ;16
-Global Const $FLAG_FISC_SET_VAT_N = 			$FLAG_REG_0 + 0x00010000 ;17
-Global Const $FLAG_FISC_SET_FISC_N = 			$FLAG_REG_0 + 0x00020000 ;18
-Global Const $FLAG_FISC_SET_VER = 				$FLAG_REG_0 + 0x00040000 ;19
-Global Const $FLAG_FISCALIZE = 					$FLAG_REG_0 + 0x00080000 ;20
-Global Const $FLAG_FISC_SET_TAX = 				$FLAG_REG_0 + 0x00100000 ;21
-Global Const $FLAG_FISC_CLEAN_N_SET = 			$FLAG_REG_0 + 0x00200000 ;22
-Global Const $FLAG_FISC_GET_STATUS = 			$FLAG_REG_0 + 0x00400000 ;23
-Global Const $FLAG_STATUS_EXIT = 				$FLAG_REG_0 + 0x00800000 ;24
-;$FLAG_REG_1
-Global Const $FLAG_SERVICE_INPUT = 				$FLAG_REG_1 + 0x00000001 ;1
-Global Const $FLAG_SERVICE_ENABLED = 			$FLAG_REG_1 + 0x00000002 ;2
-Global Const $FLAG_SERVICE_DISABLED = 			$FLAG_REG_1 + 0x00000004 ;3
-Global Const $FLAG_FISC_FISCALIZE_TYPE = 		$FLAG_REG_1 + 0x00000008 ;4
-Global Const $FLAG_PR_SINGLE_MODE = 			$FLAG_REG_1 + 0x00000010 ;5
-Global Const $FLAG_PERIOD_MODE_FUNC = 			$FLAG_REG_1 + 0x00000020 ;6
-Global Const $FLAG_ALLCTRL = 					$FLAG_REG_1 + 0x00000040 ;7
-Global Const $FLAG_ALLCTRL_DISABLE = 			$FLAG_REG_1 + 0x00000080 ;8
-Global Const $FLAG_ALLCTRL_ENABLE = 			$FLAG_REG_1 + 0x00000100 ;9
-Global Const $FLAG_PR_MAKE_NUM = 				$FLAG_REG_1 + 0x00000200 ;10
-Global Const $FLAG_PR_MAKE_DATE = 				$FLAG_REG_1 + 0x00000400 ;11
-Global Const $FLAG_PR_SINGLE_MODE_FUNC = 		$FLAG_REG_1 + 0x00000800 ;12
-Global Const $FLAG_PRINT_DIAG = 				$FLAG_REG_1 + 0x00001000 ;13
-Global Const $FLAG_PRINT_X = 					$FLAG_REG_1 + 0x00002000 ;14
-Global Const $FLAG_PRINT_Z = 					$FLAG_REG_1 + 0x00004000 ;15
-Global Const $FLAG_PRINT_CUT = 					$FLAG_REG_1 + 0x00008000 ;16
-Global Const $FLAG_IND_SHOW_TIME = 				$FLAG_REG_1 + 0x00010000 ;17
-Global Const $FLAG_FP_MODEL_MODE_SET = 			$FLAG_REG_1 + 0x00020000 ;18
-Global Const $FLAG_FP_MODEL_STRING_GET_FULL = 	$FLAG_REG_1 + 0x00040000 ;19
-Global Const $FLAG_FP_MODEL_STRING_GET = 		$FLAG_REG_1 + 0x00080000 ;20
-Global Const $FLAG_CASH_IN = 					$FLAG_REG_1 + 0x00100000 ;21
-Global Const $FLAG_CASH_OUT = 					$FLAG_REG_1 + 0x00200000 ;22
-Global Const $FLAG_MISC_EDIT_REFRESH = 			$FLAG_REG_1 + 0x00400000 ;23
-Global Const $FLAG_MISC_EXIT = 					$FLAG_REG_1 + 0x00800000 ;24
-;$FLAG_REG_2
-Global Const $FLAG_HF_EXIT = 					$FLAG_REG_2 + 0x00000001 ;1
-Global Const $FLAG_HF_OPEN = 					$FLAG_REG_2 + 0x00000002 ;2
-Global Const $FLAG_HF_WRITE = 					$FLAG_REG_2 + 0x00000004 ;3
-Global Const $FLAG_HF_SAVE = 					$FLAG_REG_2 + 0x00000008 ;4
-Global Const $FLAG_HF_READ = 					$FLAG_REG_2 + 0x00000010 ;5
-Global Const $FLAG_HF_EDIT = 					$FLAG_REG_2 + 0x00000020 ;6
-Global Const $FLAG_HF_EDIT_REFRESH = 			$FLAG_REG_2 + 0x00000040 ;7
-Global Const $FLAG_HF_EDIT_STORE = 				$FLAG_REG_2 + 0x00000080 ;8
-Global Const $FLAG_MISC_OPEN = 					$FLAG_REG_2 + 0x00000100 ;9
-Global Const $FLAG_MISC_EDIT = 					$FLAG_REG_2 + 0x00000200 ;10
-Global Const $FLAG_EXIT_MISC_OPEN = 			$FLAG_REG_2 + 0x00000400 ;11
-Global Const $FLAG_TIME_AUTO_UPDATE_MODE = 		$FLAG_REG_2 + 0x00000800 ;12
-Global Const $FLAG_TIME_AUTO_UPDATE_MODE_FUNC = $FLAG_REG_2 + 0x00001000 ;13
-Global Const $FLAG_MISC_EDIT_STORE = 			$FLAG_REG_2 + 0x00002000 ;14
-Global Const $FLAG_MISC_SAVE = 					$FLAG_REG_2 + 0x00004000 ;15
-Global Const $FLAG_SEND_CMD_W_RET = 			$FLAG_REG_2 + 0x00008000 ;16
-Global Const $FLAG_LOGO_ENABLE = 				$FLAG_REG_2 + 0x00010000 ;17
-Global Const $FLAG_LOGO_DISABLE = 				$FLAG_REG_2 + 0x00020000 ;18
-;~ #ce
-
-Global Const $REP_NUM = 1
-Global Const $REP_DATE = 2
-Global Const $REP_ZERO = 3
-Global Const $REP_N_CHECKS = 4
-Global Const $REP_N_SELLS = 5
-Global Const $REP_N_RETURNS = 6
-Global Const $REP_A = 7
-Global Const $REP_B = 8
-Global Const $REP_V = 9
-Global Const $REP_G = 10
-Global Const $REP_D = 11
-Global Const $REP_A_R = 12
-Global Const $REP_B_R = 13
-Global Const $REP_V_R = 14
-Global Const $REP_G_R = 15
-Global Const $REP_D_R = 16
-Global Const $REP_A_TAX = 17
-Global Const $REP_B_TAX = 18
-Global Const $REP_V_TAX = 19
-Global Const $REP_G_TAX = 20
-Global Const $REP_A_R_TAX = 21
-Global Const $REP_B_R_TAX = 22
-Global Const $REP_V_R_TAX = 23
-Global Const $REP_G_R_TAX = 24
-Global Const $REP_FOOTER = 25
-Global Const $REP_CHECKSUM = 26
-Global Const $REP_CHECKSUM_CALC = 27
-
-Global Const $FLASH_ADR_Z = Dec('00A00')
-Global Const $CONNECT_B_T = 'Connect'
-Global Const $CONNECT_B_T2 = 'Disconnect'
-Global Const $ALL_BYTES_MIN = 1
-Global Const $ALL_BYTES_MAX = 320 * 1024
-Global Const $START_ADDR_MIN = 0
-Global Const $START_ADDR_MAX = $ALL_BYTES_MAX - 1
-Global Const $START_ADDR_DEFAULT = $START_ADDR_MIN
-Global Const $END_ADDR_MIN = 0
-Global Const $END_ADDR_MAX = $ALL_BYTES_MAX - 1
-Global Const $END_ADDR_DEFAULT = $END_ADDR_MAX
-Global Const $ALL_BYTES_DEFAULT = $END_ADDR_DEFAULT - $START_ADDR_DEFAULT + 1
-Global Const $BLOCK_SIZE_MIN = 1
-Global Const $BLOCK_SIZE_MAX = 64
-Global Const $BLOCK_SIZE_DEFAULT = $BLOCK_SIZE_MAX
-Global Const $MAX_SL = 20
-Global Const $MAX_CL = 50
-Global Const $PR_NUM_MIN = 1
-Global Const $PR_NUM_MAX = 2540
-Global Const $PR_NUM_S_DEFAULT = $PR_NUM_MIN
-Global Const $PR_NUM_F_DEFAULT = $PR_NUM_MAX
-Global Const $X0 = 10
-Global Const $Y0 = 5
-Global Const $S_X = 30
-Global Const $S_Y = 60
-Global Const $SP_X = 10
-Global Const $SP_Y = 10
-Global Const $DelayCheckRange = 50
-Global Const $DelayPCtimeGet = 500
-Global Const $FP_MODEL_MODE_MIN = 0
-Global Const $FP_MODEL_MODE_MAX = 1
-Global Const $FP_MODEL_MODE_DEFAULT = 0
-Global Const $CASH_IO_MIN = 0
-Global Const $CASH_IO_MAX = 999999999.99
-Global Const $CASH_IO_DEFAULT = $CASH_IO_MIN
-Global Const $MAX_REP = 2540
-Global Const $MISC_START_REP_ADDR = 2560
-Global Const $MISC_READ_BYTE_COUNT = 128
 
 Dim $guiState[8] = [0, 0, 0, 0, 0, 0, 0, 0]
 Global $FactNI, $FiscNI, $VatNI
@@ -172,7 +27,8 @@ Global $timeDT, $timeSetB, $timeGetB, $timePCgetB, $getStatusB, $textE, $HFeditE
 Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $periodFormNumCB, $periodFormDateCB, $PRmakeB, $PRsingleChB
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
 Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
-Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB, $LogoEnableB, $LogoDisableB
+Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB, $LogoEnableB, $LogoDisableB, $FPpasswordI, $sellB, $_sell, $fiscOpenB, $fiscTotalB
+Global $fiscCloseB
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -188,6 +44,7 @@ Global $PRnumF = $PR_NUM_F_DEFAULT
 Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmodelMode, $CashIn, $CashOut
 Global $timeAutoUpdateMode = 0
 Global $statusBytes
+Global $FPpassword = '0000'
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
 Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T', 'Ekselio']
@@ -292,7 +149,7 @@ Func _checkGUImsg()
 			Case $m = $timePCgetB
 				$retVal = _PCtimeGet()
 			Case $m = $FiscRefreshB
-				$retVal = _FiscRefresh()
+				$retVal = _GetFiscInfo()
 			Case $m = $SetFactNB
 				$retVal = _SetFactN($h)
 			Case $m = $SetFiscNB
@@ -367,6 +224,8 @@ Func _checkGUImsg()
 				ElseIf _TimeAutoUpdateModeGet() And GUICtrlRead($m) = $GUI_UNCHECKED Then
 					_TimeAutoUpdateModeSet(0)
 				EndIf
+			Case $m = $sellB
+				_SellTools()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -399,6 +258,17 @@ Func _checkGUImsg()
 				_LogoEnable()
 			Case $m = $LogoDisableB
 				_LogoDisable()
+		EndSelect
+	ElseIf $h = $_sell Then
+		Select
+			Case $m = $GUI_EVENT_CLOSE
+				_FlagOn($FLAG_SELL_EXIT)
+			Case $m = $fiscOpenB
+				$res = _FiscCheckOpen()
+			Case $m = $fiscTotalB
+				$res = _FiscCheckTotal()
+			Case $m = $fiscCloseB
+				$res = _FiscCheckClose()
 		EndSelect
 	ElseIf $h = $_misc Then
 		Select
@@ -434,7 +304,6 @@ Func _CheckInput($var, $min, $max, $defv)
 EndFunc   ;==>_CheckInput
 Func _CheckRange()
 	Local $i, $data
-	;_DLog('$allBytes=' & $allBytes & ' GUICtrlRead($allBytesI)=' & GUICtrlRead($allBytesI) & @CRLF)
 	$allBytes = GUICtrlRead($allBytesI)
 	$i = _CheckInput($allBytes, $ALL_BYTES_MIN, $ALL_BYTES_MAX, $ALL_BYTES_DEFAULT)
 	If $i <> $allBytes Then
@@ -463,9 +332,7 @@ Func _CheckRange()
 	EndIf
 	If $endAdr - $startAdr + 1 <> $allBytes Then
 		_DLog('Not correct $allBytes, $endAdr - $startAdr + 1 <> $allBytes. Corrected.' & @CRLF)
-		;$allBytes = $endAdr - $startAdr + 1
 		$endAdr = $allBytes + $startAdr - 1
-		;GUICtrlSetData($allBytesI, $allBytes)
 		GUICtrlSetData($endAdrI, $endAdr)
 	EndIf
 	$PRnumS = GUICtrlRead($periodsI)
@@ -507,6 +374,7 @@ Func _CheckRange()
 		$CashOut = $i
 		GUICtrlSetData($CashOutI, $CashOut)
 	EndIf
+	$FPpassword = GUICtrlRead($FPpasswordI)
 EndFunc   ;==>_CheckRange
 Func _CleanNSet($mainHndl)
 	Local $retVal
@@ -564,9 +432,9 @@ Func _Fiscalize($mainHndl)
 	EndIf
 	_FlagOn($FLAG_FISCALIZE)
 	If GUICtrlRead($RefiscChB) = $GUI_CHECKED Then
-		$dd = '0000,' & $i & ',' & GUICtrlRead($VatNI) & ',' & _GetVatMode()
+		$dd = $FPpassword & ',' & $i & ',' & GUICtrlRead($VatNI) & ',' & _GetVatMode()
 	Else
-		$dd = '0000,' & $i
+		$dd = $FPpassword & ',' & $i
 	EndIf
 	_DLog('_Fiscalize(): $dd = ' & $dd & @CRLF)
 	$retVal = _SendCMDwRet(72, $dd, $data)
@@ -578,13 +446,36 @@ Func _Fiscalize($mainHndl)
 	_FlagOff($FLAG_FISCALIZE)
 	Return $retVal
 EndFunc   ;==>_Fiscalize
-Func _FiscRefresh()
-	Local $retVal
-	_FlagOn($FLAG_FISC_REFRESH)
-	$retVal = _GetFiscInfo()
-	_FlagOff($FLAG_FISC_REFRESH)
+Func _FiscCheckClose()
+	Local $retVal, $data = ''
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_FISC_CHECK_CLOSE)
+	$retVal = _SendCMDwRet(56, '', $data)
+	_DLog('_FiscCkeckClose(): $data = ' & $data & @CRLF)
+	_FlagOff($FLAG_FISC_CHECK_CLOSE)
 	Return $retVal
-EndFunc   ;==>_FiscRefresh
+EndFunc
+Func _FiscCheckOpen()
+	Local $retVal, $data = ''
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_FISC_CHECK_OPEN)
+	$retVal = _SendCMDwRet(48, '1,' & $FPpassword & ',1,I', $data)
+	_DLog('_FiscCkeckOpen(): $data = ' & $data & @CRLF)
+	_FlagOff($FLAG_FISC_CHECK_OPEN)
+	Return $retVal
+EndFunc
+Func _FiscCheckTotal($paid = '', $paidType = $PAID_TYPE_CASH, $txt = '')
+	Local $retVal, $dd = '', $data = ''
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_FISC_CHECK_TOTAL)
+	If $paid <> '' And Number($paid) <> 0 Then
+		$dd = $txt & _HexToString('09') & $paidType & $paid
+	EndIf
+	$retVal = _SendCMDwRet(53, $dd, $data)
+	_DLog('_FiscCkeckTotal(): $data = ' & $data & @CRLF)
+	_FlagOff($FLAG_FISC_CHECK_TOTAL)
+	Return $retVal
+EndFunc
 Func _Flag($f)
 	Local $r, $i = 0
 	$i = BitShift(BitAND($f, 0xFF000000), 6 * 4)
@@ -1045,6 +936,13 @@ Func _GUIprepair()
 	$LogoEnableB = GUICtrlCreateButton('Logo On', 130, 205 - 30, 50, 20, 0)
 	$LogoDisableB = GUICtrlCreateButton('Logo Off', 190, 205 - 30, 50, 20, 0)
 	#endregion $_hf
+	#region $_sell
+	$_sell = GUICreate('Sell', 300 - 20, 230 - 30)
+	$fiscOpenB = GUICtrlCreateButton('Open', 10, 10, 50, 20, 0)
+	$fiscTotalB = GUICtrlCreateButton('Total', 10, 40, 50, 20, 0)
+	$fiscCloseB = GUICtrlCreateButton('Close', 10, 70, 50, 20, 0)
+	GUISwitch($_sell)
+	#endregion
 	#region $_main
 	$_main = GUICreate('FPtools', 367, 421)
 	GUISwitch($_main)
@@ -1101,6 +999,7 @@ Func _GUIprepair()
 	GUICtrlSetFont(-1, 7)
 	$HFeditB = GUICtrlCreateButton('Edit HF', 130, 210, 50, 20)
 	$MiscB = GUICtrlCreateButton('Misc', 130, 240, 50, 20)
+	$sellB = GUICtrlCreateButton('Sell', 130, 270, 50, 20)
 	$timeDT = GUICtrlCreateDate('', 190, 150, 110, 20, $DTS_UPDOWN)
 	$timeSetB = GUICtrlCreateButton('Set', 190, 180, 50, 20)
 	$timeGetB = GUICtrlCreateButton('Get', 250, 180, 50, 20)
@@ -1117,8 +1016,9 @@ Func _GUIprepair()
 	$PortN = GUICtrlCreateCombo('', 10, 390, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$PortSpeed = GUICtrlCreateCombo('', 90, 390, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$PortConB = GUICtrlCreateButton('Connect', 170, 390, 60, 20)
-	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 390, 60, 20)
 	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
+	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 390, 60, 20)
+	$FPpasswordI = GUICtrlCreateInput('', 310, 390, 50, 20)
 	$PrintCutB = GUICtrlCreateButton('Cut', 310, 300, 50, 20)
 	$CashInB = GUICtrlCreateButton('+Cash', 10, 240, 30, 20)
 	$CashInI = GUICtrlCreateInput('', 50, 240, 70, 20)
@@ -1178,6 +1078,8 @@ Func _GUIprepair()
 	_CtrlListAdd($CashInI)
 	_CtrlListAdd($CashOutI)
 	_CtrlListAdd($VatModeChB)
+	_CtrlListAdd($FPpasswordI)
+	_CtrlListAdd($sellB)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1189,6 +1091,7 @@ Func _GUIprepair()
 	GUICtrlSetData($allBytesI, $allBytes)
 	GUICtrlSetData($periodsI, $PRnumS)
 	GUICtrlSetData($periodfI, $PRnumF)
+	GUICtrlSetData($FPpasswordI, $FPpassword)
 	_FPmodelModeSet(0)
 	GUICtrlSetData($FPmodel, _FPmodelStringGetFull(), _FPmodelStringGet(_FPmodelModeGet()))
 	#endregion GUICtrlSetData
@@ -1723,7 +1626,7 @@ Func _PrintX()
 	Local $retVal, $data
 	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_X)
-	$retVal = _SendCMDwRet(69, '0000,2', $data)
+	$retVal = _SendCMDwRet(69, $FPpassword & ',2', $data)
 	_FlagOff($FLAG_PRINT_X)
 	Return $retVal
 EndFunc   ;==>_PrintX
@@ -1731,7 +1634,7 @@ Func _PrintZ()
 	Local $retVal, $data
 	If _TestConnect() = '' Then Return 1
 	_FlagOn($FLAG_PRINT_Z)
-	$retVal = _SendCMDwRet(69, '0000,0', $data)
+	$retVal = _SendCMDwRet(69, $FPpassword & ',0', $data)
 	_FlagOff($FLAG_PRINT_Z)
 	Return $retVal
 EndFunc   ;==>_PrintZ
@@ -1741,7 +1644,7 @@ Func _PRmakeDate()
 	_FlagOn($FLAG_PR_MAKE_DATE)
 	$ds = GUICtrlRead($periodsDT)
 	$df = GUICtrlRead($periodfDT)
-	$dd = '0000,' & StringReplace(StringLeft($ds, 8), '-', '') & ',' & StringReplace(StringLeft($df, 8), '-', '')
+	$dd = $FPpassword & ',' & StringReplace(StringLeft($ds, 8), '-', '') & ',' & StringReplace(StringLeft($df, 8), '-', '')
 	$retVal = _SendCMDwRet(79, $dd, $data)
 	_FlagOff($FLAG_PR_MAKE_DATE)
 	Return $retVal
@@ -1752,7 +1655,7 @@ Func _PRmakeNum()
 	_FlagOn($FLAG_PR_MAKE_NUM)
 	$ds = GUICtrlRead($periodsI)
 	$df = GUICtrlRead($periodfI)
-	$dd = '0000,' & $ds & ',' & $df
+	$dd = $FPpassword & ',' & $ds & ',' & $df
 	$retVal = _SendCMDwRet(95, $dd, $data)
 	_FlagOff($FLAG_PR_MAKE_NUM)
 	Return $retVal
@@ -1793,6 +1696,22 @@ Func _PRsingleModeSet($m)
 	EndIf
 	_FlagOff($FLAG_PR_SINGLE_MODE_FUNC)
 EndFunc   ;==>_PRsingleModeSet
+Func _SellTools()
+	_FlagOn($FLAG_SELL_TOOL)
+	GUISetState(@SW_DISABLE)
+	GUISwitch($_sell)
+	GUISetState(@SW_SHOW)
+	Do
+		_checkGUImsg()
+	Until _Flag($FLAG_SELL_EXIT)
+	_FlagOff($FLAG_SELL_EXIT)
+	GUISetState(@SW_HIDE)
+	GUISwitch($_main)
+	GUISetState(@SW_HIDE)
+	GUISetState(@SW_SHOW)
+	GUISetState(@SW_ENABLE)
+	_FlagOff($FLAG_SELL_TOOL)
+EndFunc
 Func _SendCMDwRet($c, $d, ByRef $data)
 	Local $failTry = 0, $res, $rrRaw, $rr, $retVal = 0
 	_FlagOn($FLAG_SEND_CMD_W_RET)
@@ -1911,7 +1830,7 @@ Func _SetTaxRates($mainHndl)
 	If GUICtrlRead($TaxRateBChB) = $GUI_CHECKED Then $jB = 1
 	If GUICtrlRead($TaxRateVChB) = $GUI_CHECKED Then $jV = 1
 	If GUICtrlRead($TaxRateGChB) = $GUI_CHECKED Then $jG = 1
-	$dd = '0000,2,' & $jA & $jB & $jV & $jG & ',' & $iA & ',' & $iB & ',' & $iV & ',' & $iG
+	$dd = $FPpassword & ',2,' & $jA & $jB & $jV & $jG & ',' & $iA & ',' & $iB & ',' & $iV & ',' & $iG
 	$retVal = _SendCMDwRet(83, $dd, $data)
 	_FlagOff($FLAG_FISC_SET_TAX)
 	Return $retVal
