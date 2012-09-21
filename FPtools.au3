@@ -28,7 +28,7 @@ Global $serviceChB, $RefiscChB, $periodfDT, $periodsDT, $periodfI, $periodsI, $p
 Global $FactNL, $VatNL, $FiscNL, $startAdrL, $endAdrL, $bdL, $allBytesL, $percL, $EldL, $LeftL, $curBPSL, $PrintDiagB, $PrintXB, $PrintZB
 Global $HFPrintDiagB, $PrintCutB, $FPmodel, $CashInB, $CashOutB, $CashInI, $CashOutI, $MiscOpenB, $MiscSaveB, $MiscEditE, $MiscB
 Global $timeAutoUpdateModeChB, $MiscStopB, $VatModeChB, $LogoEnableB, $LogoDisableB, $FPpasswordI, $sellB, $_sell, $fiscOpenB, $fiscTotalB
-Global $fiscCloseB
+Global $fiscCloseB, $CashDriverB, $CashDriverI
 Global $DTstyle = 'dd-MM-yy HH:mm:ss'
 Global $DTstyleDate = 'dd-MM-yy'
 Global $portState = 0
@@ -45,6 +45,7 @@ Global $FactN, $FiscN, $VatN, $TaxRateA, $TaxRateB, $TaxRateV, $TaxRateG, $FPmod
 Global $timeAutoUpdateMode = 0
 Global $statusBytes
 Global $FPpassword = '0000'
+Global $FlagDebug = 0
 Dim $HFstr[8]
 Dim $serviceList[$MAX_SL], $CtrlList[$MAX_CL]
 Dim $FPModelStrM[$FP_MODEL_MODE_MAX + 1] = ['FP3530T', 'Ekselio']
@@ -70,6 +71,16 @@ Func _AllCtrlEnable()
 	Next
 	_FlagOff($FLAG_ALLCTRL_ENABLE)
 EndFunc   ;==>_AllCtrlEnable
+Func _CashDriverOpen()
+	Local $retVal, $dd, $data
+	If _TestConnect() = '' Then Return 1
+	_FlagOn($FLAG_CASH_DRIVER_OPEN)
+	$dd = GUICtrlRead($CashDriverI)
+	$retVal = _SendCMDwRet(106, $dd, $data)
+	GUICtrlSetData($CashDriverI, '')
+	_FlagOff($FLAG_CASH_DRIVER_OPEN)
+	Return $retVal
+EndFunc
 Func _CashIn()
 	Local $retVal, $data
 	If _TestConnect() = '' Then Return 1
@@ -226,6 +237,8 @@ Func _checkGUImsg()
 				EndIf
 			Case $m = $sellB
 				_SellTools()
+			Case $m = $CashDriverB
+				_CashDriverOpen()
 		EndSelect
 	ElseIf $h = $_stat Then
 		Select
@@ -419,6 +432,9 @@ Func _CtrlListAdd($h)
 	If $CLmax < $MAX_CL Then
 		$CtrlList[$CLmax] = $h
 		$CLmax += 1
+		_DLog('$CLmax = ' & $CLmax & @CRLF)
+	Else
+		_DLog('$CtrlList[] max size ' & $MAX_CL & ' reached!' & @CRLF)
 	EndIf
 EndFunc   ;==>_CtrlListAdd
 Func _Fiscalize($mainHndl)
@@ -489,31 +505,31 @@ Func _Flag($f)
 EndFunc   ;==>_Flag
 Func _FlagOff($f)
 	Local $i
-	_DLog('FlagOff(' & Hex($f, 8))
+	If $FlagDebug Then _DLog('FlagOff(' & Hex($f, 8))
 	$i = BitShift(BitAND($f, 0xFF000000), 6 * 4)
-	_DLog('): r=' & Hex($i, 8))
+	If $FlagDebug Then _DLog('): r=' & Hex($i, 8))
 	If $i < 0 Or $i > 7 Then
 		_DLog('Out of range!' & @CRLF)
 		Exit
 	EndIf
 	$f = BitAND($f, 0x00FFFFFF)
-	_DLog(',f=' & Hex($f, 8))
+	If $FlagDebug Then _DLog(',f=' & Hex($f, 8))
 	$guiState[$i] = BitAND($guiState[$i], BitNOT($f))
-	_DLog('. [' & Hex($guiState[0], 8) & ';' & Hex($guiState[1], 8) & ';' & Hex($guiState[2], 8) & ']' & @CRLF)
+	If $FlagDebug Then _DLog('. [' & Hex($guiState[0], 8) & ';' & Hex($guiState[1], 8) & ';' & Hex($guiState[2], 8) & ']' & @CRLF)
 EndFunc   ;==>_FlagOff
 Func _FlagOn($f)
 	Local $i = 0
-	_DLog('FlagOn (' & Hex($f, 8))
+	If $FlagDebug Then _DLog('FlagOn (' & Hex($f, 8))
 	$i = BitShift(BitAND($f, 0xFF000000), 6 * 4)
-	_DLog('): r=' & Hex($i, 8))
+	If $FlagDebug Then _DLog('): r=' & Hex($i, 8))
 	If $i < 0 Or $i > 7 Then
 		_DLog('Out of range!' & @CRLF)
 		Exit
 	EndIf
 	$f = BitAND($f, 0x00FFFFFF)
-	_DLog(',f=' & Hex($f, 8))
+	If $FlagDebug Then _DLog(',f=' & Hex($f, 8))
 	$guiState[$i] = BitOR($guiState[$i], $f)
-	_DLog('. [' & Hex($guiState[0], 8) & ';' & Hex($guiState[1], 8) & ';' & Hex($guiState[2], 8) & ']' & @CRLF)
+	If $FlagDebug Then _DLog('. [' & Hex($guiState[0], 8) & ';' & Hex($guiState[1], 8) & ';' & Hex($guiState[2], 8) & ']' & @CRLF)
 EndFunc   ;==>_FlagOn
 Func _FlashErase()
 	Local $retVal, $data
@@ -1017,6 +1033,8 @@ Func _GUIprepair()
 	$PortSpeed = GUICtrlCreateCombo('', 90, 390, 70, 25, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 	$PortConB = GUICtrlCreateButton('Connect', 170, 390, 60, 20)
 	$PrintDiagB = GUICtrlCreateButton('Diag', 310, 330, 50, 20)
+	$CashDriverB = GUICtrlCreateButton('CashDrw', 250, 360, 50, 20)
+	$CashDriverI = GUICtrlCreateInput('', 310, 360, 50, 20)
 	$serviceChB = GUICtrlCreateCheckbox('Service', 240, 390, 60, 20)
 	$FPpasswordI = GUICtrlCreateInput('', 310, 390, 50, 20)
 	$PrintCutB = GUICtrlCreateButton('Cut', 310, 300, 50, 20)
@@ -1080,6 +1098,8 @@ Func _GUIprepair()
 	_CtrlListAdd($VatModeChB)
 	_CtrlListAdd($FPpasswordI)
 	_CtrlListAdd($sellB)
+	_CtrlListAdd($CashDriverB)
+	_CtrlListAdd($CashDriverI)
 	#endregion _CtrlListAdd
 	#region GUICtrlSetData
 	$s = _CommListPorts(1)
@@ -1456,7 +1476,7 @@ Func _MiscGet($s, $adr)
 	Return $retVal
 EndFunc   ;==>_MiscGet
 Func _MiscOpen($mainHndl)
-	Local $errStatus, $retVal, $k, $ss, $snum, $sf, $CHKS, $CHKS_C, $err_msg
+	Local $errStatus, $retVal, $k, $ss, $snum, $sf, $CHKS, $CHKS_C, $err_msg, $rnum
 	GUISetState(@SW_DISABLE, $mainHndl)
 	Local $filename = FileOpenDialog('Open bin as', '', 'Binary (*.bin)|All (*.*)')
 	$errStatus = @error
@@ -1496,15 +1516,16 @@ Func _MiscOpen($mainHndl)
 		$CHKS = _MiscGet($ss, $REP_CHECKSUM)
 		$CHKS_C = _MiscGet($ss, $REP_CHECKSUM_CALC)
 		$err_msg = ''
+		$rnum = _MiscGet($ss, $REP_NUM)
 		If $CHKS <> $CHKS_C Then $err_msg = ' !!!CHECHSUM NOT CORRECT!!!'
-		$sf = _MiscGet($ss, $REP_NUM) & ',' & _MiscGet($ss, $REP_DATE) & ',' & _MiscGet($ss, $REP_ZERO) & ',' & _MiscGet($ss, $REP_N_CHECKS) & ',' _
-				 & _MiscGet($ss, $REP_N_SELLS) & ',' & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' _
-				 & _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' _
-				 & _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' _
-				 & _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' _
-				 & _MiscGet($ss, $REP_G_TAX) & ',' & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' _
-				 & _MiscGet($ss, $REP_V_R_TAX) & ',' & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' _
-				 & $CHKS & ',' & $CHKS_C & $err_msg
+		$sf = $rnum & '(' & HEX($rnum - 1, 4) & '@' & HEX(2560 + 128 * ($rnum - 1), 5) & '),' & _MiscGet($ss, $REP_DATE) & ',' _
+				 & _MiscGet($ss, $REP_ZERO) & ',' & _MiscGet($ss, $REP_N_CHECKS) & ',' & _MiscGet($ss, $REP_N_SELLS) & ',' _
+				 & _MiscGet($ss, $REP_N_RETURNS) & ',' & _MiscGet($ss, $REP_A) & ',' & _MiscGet($ss, $REP_B) & ',' & _MiscGet($ss, $REP_V) & ',' _
+				 & _MiscGet($ss, $REP_G) & ',' & _MiscGet($ss, $REP_D) & ',' & _MiscGet($ss, $REP_A_R) & ',' & _MiscGet($ss, $REP_B_R) & ',' _
+				 & _MiscGet($ss, $REP_V_R) & ',' & _MiscGet($ss, $REP_G_R) & ',' & _MiscGet($ss, $REP_D_R) & ',' & _MiscGet($ss, $REP_A_TAX) & ',' _
+				 & _MiscGet($ss, $REP_B_TAX) & ',' & _MiscGet($ss, $REP_V_TAX) & ',' & _MiscGet($ss, $REP_G_TAX) & ',' _
+				 & _MiscGet($ss, $REP_A_R_TAX) & ',' & _MiscGet($ss, $REP_B_R_TAX) & ',' & _MiscGet($ss, $REP_V_R_TAX) & ',' _
+				 & _MiscGet($ss, $REP_G_R_TAX) & ',' & _MiscGet($ss, $REP_FOOTER) & ',' & $CHKS & ',' & $CHKS_C & $err_msg
 		If $sf < 0 Or $sf > $MAX_REP Then
 			_DLog('_MiscOpen(): Report record not valid' & @CRLF)
 			ExitLoop
@@ -1762,6 +1783,9 @@ Func _ServiceListAdd($h)
 	If $SLmax < $MAX_SL Then
 		$serviceList[$SLmax] = $h
 		$SLmax += 1
+		_DLog('$SLmax = ' & $SLmax & @CRLF)
+	Else
+		_DLog('$serviceList[] max size ' & $MAX_SL & ' reached!' & @CRLF)
 	EndIf
 EndFunc   ;==>_ServiceListAdd
 Func _SetFactN($mainHndl)

@@ -81,6 +81,7 @@ Global Const $FLAG_LOGO_DISABLE = 				$FLAG_REG_2 + 0x00020000 ;18
 Global Const $FLAG_FISC_CHECK_TOTAL = 			$FLAG_REG_2 + 0x00040000 ;19
 Global Const $FLAG_SELL_EXIT = 					$FLAG_REG_2 + 0x00080000 ;20
 Global Const $FLAG_SELL_TOOL = 					$FLAG_REG_2 + 0x00100000 ;21
+Global Const $FLAG_CASH_DRIVER_OPEN = 			$FLAG_REG_2 + 0x00200000 ;22
 ;~ #ce
 
 Global Const $REP_NUM = 1
@@ -127,7 +128,7 @@ Global Const $BLOCK_SIZE_MIN = 1
 Global Const $BLOCK_SIZE_MAX = 64
 Global Const $BLOCK_SIZE_DEFAULT = $BLOCK_SIZE_MAX
 Global Const $MAX_SL = 20
-Global Const $MAX_CL = 50
+Global Const $MAX_CL = 80
 Global Const $PR_NUM_MIN = 1
 Global Const $PR_NUM_MAX = 2540
 Global Const $PR_NUM_S_DEFAULT = $PR_NUM_MIN

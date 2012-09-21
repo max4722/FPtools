@@ -7,6 +7,7 @@
 Opt('MustDeclareVars', 1)
 
 Global $seq = 0
+Global $DLogFlag = 1
 
 Func _BCC4($s)
 	If $s == '' Then Return ''
@@ -26,7 +27,7 @@ Func _ClosePort($flag = False)
 	_CommClosePort($flag)
 EndFunc   ;==>_ClosePort
 Func _DLog($s)
-	ConsoleWrite($s)
+	If $DLogFlag Then ConsoleWrite($s)
 	;GUICtrlSetData($myedit, $s, 1)
 EndFunc   ;==>_DLog
 Func _GetBCC($s)
