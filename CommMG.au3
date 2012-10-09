@@ -1,11 +1,11 @@
 #include-once
-Opt("mustdeclarevars", 1) ;testing only
+#AutoIt3Wrapper_OutFile_X64=N
+;Opt("mustdeclarevars", 1) ;testing only
 #cs
     UDF for commg.dll
-    V1.0 Replaces mgcomm.au3
 #ce
-Const $sUDFVersion = 'CommMG.au3 V2.89'
-Global $mgdebug = False
+
+Global $mgdebug = false
 #cs
     Version 2.1.1 Added missing declarations which caused problems in scripts using Opt("MustDeclareVars",1) - thanks to Hannes
     Version 2.1 Thanks to jps1x2 for the read/send bte array incentive and testing.
@@ -38,7 +38,10 @@ Global $mgdebug = False
     Version 2.88 Made the sleep added the _CommGetLine only happen if no character received so that reading
 	             is not slower.
 	Version 2.89 Corect typo in V2.88
-
+	Version 2.90 Change _CommClosePort. Requires the use of Commg.dll version 2.79 or later. Thanks to tfabris for telling me about the error.
+#ce
+Const $sUDFVersion = 'CommMG.au3 V2.90'
+#cs
     AutoIt Version: 3.2.3++
     Language:       English
 
@@ -88,7 +91,7 @@ Global $DLLNAME = 'commg.dll'
 ; Function Name:  _CommSetDllPath($sFullPath)
 ; Description:    Sets full path to th edll so that it can be in any location.
 ;
-; Parameters:     $sFullPath -  Full path to the commg.dll e.g. "C:\COMMS\commg.dll"
+; Parameters:     $sFullPath -  Full path to the commg.dll e.g.  _CommSetDllPath("C:\COMMS\commg.dll")
 ; Returns;  on success 1
 ;           on error -1 if full path does not exist
 ;===============================================================================
@@ -116,6 +119,7 @@ EndFunc   ;==>_CommSetDllPath
 Func _CommListPorts($iReturnType = 1)
     Local $vDllAns, $lpres
     If Not $fPortOpen Then
+		ConsoleWrite($DLLNAME & @LF)
         $hDll = DllOpen($DLLNAME)
         If $hDll = -1 Then
             SetError(2)
@@ -474,6 +478,8 @@ Func _CommGetLine($sEndChar = @CR, $maxlen = 0, $maxtime = 0)
             Return $sStr1
         EndIf
         ;$ic =  _CommGetInputCount()
+
+
         $sNextChar = _CommReadChar()
         $iSaveErr = @error
         If $iSaveErr <> 0 Then
@@ -493,6 +499,7 @@ Func _CommGetLine($sEndChar = @CR, $maxlen = 0, $maxtime = 0)
             mgdebugCW("Errors" & @CRLF)
             Return $sStr1
         EndIf
+
       if $snextchar = '' then sleep(20)
     WEnd
 
@@ -521,7 +528,7 @@ Func _CommGetInputCount()
         Return 0
     EndIf
 
-
+mgdebugCW("to dll getipcount");
     $vDllAns = DllCall($hDll, 'str', 'GetInputCount')
 
     If @error <> 0 Then
@@ -592,7 +599,7 @@ Func _CommReadByte($wait = 0)
         Return ''
     EndIf
 
-
+mgdebugCW("599 before get input count");
     If Not $wait Then
         $iCount = _CommGetInputCount()
         If @error = 1 Or $iCount = 0 Then
@@ -600,7 +607,7 @@ Func _CommReadByte($wait = 0)
             Return ''
         EndIf
     EndIf
-
+mgdebugCW("to dll getbyte");
     $vDllAns = DllCall($hDll, 'str', 'GetByte');GetByte returns the ascii code in string format for the next char
 
     If @error <> 0 Then
@@ -611,7 +618,7 @@ Func _CommReadByte($wait = 0)
 
     If StringLen($vDllAns[0]) > 3 or $vDllAns[0] > 255 Then ;Execute($vDllAns[0]) > 999 Then ;
        ; mgdebugCW
-		consolewrite("getbyte call returned >" & $vDllAns[0] & @CRLF)
+		mgdebugCW("getbyte call returned >" & $vDllAns[0] & @CRLF)
         Return SetError(3, 0, $vDllAns[0])
     EndIf
 ;consolewrite("getbyte call returned >" & $vDllAns[0] & @CRLF)
@@ -639,7 +646,7 @@ Func _CommReadChar($wait = 0)
         SetError(1)
         Return 0
     EndIf
-
+mgdebugCW("will read byte");
     $sChar = _CommReadByte($wait)
 
     $iErr = @error
@@ -650,7 +657,7 @@ Func _CommReadChar($wait = 0)
         SetError(1)
         Return ''
     EndIf
-	ConsoleWrite(Chr(Execute($sChar)) & @CRLF)
+	mgdebugCW(Chr(Execute($sChar)) & @CRLF)
     If $iErr == 0 Then Return Chr(Execute($sChar))
 EndFunc   ;==>_CommReadChar
 
@@ -818,15 +825,13 @@ Func _CommClosePort($fAll = False)
 
     _CommClearOutputBuffer()
     _CommClearInputBuffer()
-    DllCall($hDll, 'int', 'ClosePort', 'int');close cuirrent port
 
-
-    If $fAll Then
         DllCall($hDll, 'int', 'CloseDown', 'int', $closeAll);close all ports
-        ;DllClose($hDll)
+
         If @error <> 0 Then ConsoleWrite("Error closing dll" & @CRLF)
         $fPortOpen = False
-    EndIf
+		if $fAll then DllClose($hDll)
+
 EndFunc   ;==>_CommClosePort
 
 
@@ -1053,7 +1058,7 @@ Func _CommGetLineStates()
         SetError(1)
         Return -1
     EndIf
-    ConsoleWrite($vDllAns[0] & @CRLF)
+    mgdebugCW($vDllAns[0] & @CRLF)
     For $iL = 0 To 3
         $aStates[$iL] = BitAND($vDllAns[0], 2 ^ $iL) <> 0
     Next

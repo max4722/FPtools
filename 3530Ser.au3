@@ -104,9 +104,9 @@ Func _MakeString($cmd, $data = '', $seq = 0)
 	$ss = $s0x01 & $lenStr & $seqStr & $cmdStr & $data & $s0x05 & $bccStr & $s0x03
 	Return $ss
 EndFunc   ;==>_MakeString
-Func _OpenPort($port = 1, $bps = 19200)
+Func _OpenPort($port = 1, $bps = 19200, $bits = 8, $par = 0, $stop = 1, $flow = 2, $RTS = 0, $DTR = 0)
 	Local $errstr = ''
-	_CommSetPort($port, $errstr, $bps)
+	_CommSetPort($port, $errstr, $bps, $bits, $par, $stop, $flow, $RTS, $DTR)
 	If @error <> 0 Then
 		Return $errstr
 	EndIf

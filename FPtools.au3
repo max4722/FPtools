@@ -1596,7 +1596,7 @@ EndFunc   ;==>_PCtimeGet
 Func _Port()
 	Local $p, $sp, $err, $i
 	If $portState Then
-		_ClosePort()
+		_ClosePort(True)
 		_AllCtrlDisable()
 		GUICtrlSetData($PortConB, $CONNECT_B_T)
 		GUICtrlSetState($PortConB, $GUI_ENABLE)
